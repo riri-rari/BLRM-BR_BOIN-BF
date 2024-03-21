@@ -189,6 +189,7 @@ If the current dose is the maximum one: no need to check for backfilling
 
 #### 5: What to do 
 
+21/3/24
 - Implement the part of selecton of MTD (account for the case of no data at doses eg when you reach n_stop before reaching n_max. -->  Accounted with filtering of the dataset)
 - Modify the codes to accomodate the simulation parms (return the values 0f interest and set the seed to accomodate the current number of the simulation)
 - Modify to have the seed relative to the current run and the current simualtion round (to have same values for BOIN and BLRM)
