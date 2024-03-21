@@ -620,7 +620,7 @@ BFBOIN <- function(doses, true_pDLT, true_presp, cohortsize,  n_max, n_cap, n_st
   return(results)
 }
 
-
+---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 # Example 
 
 doses <- seq(1, 5, 1)
@@ -634,6 +634,44 @@ lambda <- 3
 # Scenario 0
 true_pDLT <- c(0.40, 0.45, 0.50, 0.55, 0.60)
 true_presp <- c(0.3, 0.4, 0.45, 0.5, 0.55)
+# Scenario 1
+true_pDLT <- c(0.25, 0.41, 0.45, 0.49, 0.53)
+true_presp <- c(0.3, 0.4, 0.45, 0.5, 0.55)
+# Scenario 2
+true_pDLT <- c(0.12, 0.25, 0.42, 0.49, 0.55)
+true_presp <- c(0.2, 0.3, 0.4, 0.5, 0.6)
+# Scenario 3
+true_pDLT <- c(0.04, 0.12, 0.25, 0.43, 0.63)
+true_presp <- c(0.1, 0.2, 0.3, 0.45, 0.58)
+# Scenario 4 
+true_pDLT <- c(0.02, 0.06, 0.1, 0.25, 0.4)
+true_presp <- c(0.05, 0.1, 0.15, 0.3, 0.45)
+# Scenario 5
+true_pDLT <- c(0.02, 0.05, 0.08, 0.11, 0.25)
+true_presp <- c(0.05, 0.1, 0.15, 0.2, 0.3)
+# Scenario 6
+true_pDLT <- c(0.12, 0.25, 0.42, 0.49, 0.55)
+true_presp <- c(0.3, 0.35, 0.36, 0.36, 0.36)
+# Scenario 7
+true_pDLT <- c(0.04, 0.12, 0.25, 0.43, 0.63)
+true_presp <- c(0.15, 0.3, 0.35, 0.36, 0.36)
+# Scenario 8
+true_pDLT <- c(0.02, 0.06, 0.1, 0.25, 0.4)
+true_presp <- c(0.10, 0.2, 0.3, 0.35, 0.35)
+# Scenario 9
+true_pDLT <- c(0.02, 0.05, 0.08, 0.11, 0.25)
+true_presp <- c(0.10, 0.15, 0.2, 0.3, 0.35)
+# Scenario 10
+true_pDLT <- c(0.04, 0.12, 0.25, 0.43, 0.63)
+true_presp <- c(0.3, 0.32, 0.35, 0.36, 0.36)
+# Scenario 11
+true_pDLT <- c(0.02, 0.06, 0.1, 0.25, 0.4)
+true_presp <- c(0.1, 0.3, 0.32, 0.35, 0.36)
+# Scenario 12
+true_pDLT <- c(0.02, 0.05, 0.08, 0.11, 0.25)
+true_presp <- c(0.1, 0.15, 0.3, 0.32, 0.35)
+
+results <- BFBOIN(doses, true_pDLT, true_presp, cohortsize,  n_max, n_cap, n_stop, DLT_time, lambda)
 
 ## MTD finding with select.MTD from BOIN
 
