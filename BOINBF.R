@@ -18,7 +18,8 @@ weibull_parms <- function(pDLT, DLT_time){
 
 
 ## cohort_patient()
-cohort_patient <- function(cohort, doses_info, current_dose, run, pts, previous_time, last_arrival_time = 0, last_lag = 0){
+cohort_patient <- function(cohort, doses_info, current_dose, run, 
+                           pts, previous_time, last_arrival_time = 0, last_lag = 0){
   
   # seed <- 1234 + run
   # set.seed(seed)
@@ -131,7 +132,7 @@ maximum_open <- function(cohort, time_pts_backfill, current_dose, doses_info, ne
       doses <- doses_info$Dose
   
       change_backfill <- F
-      while (change_backfill == F){
+      while (isFALSE(change_backfill)){
         
         #first condition: open state
         current_backfill_dose <- doses_info %>% filter(State == 1)  %>% filter(Dose < current_dose) %>% arrange(Dose) %>% tail(1)
@@ -587,7 +588,8 @@ compute_BFBOIN <- function(cohort, doses_info, new_reference, cohortsize, n_max,
 
 ## BFBOIN()
 
-BFBOIN <- function(doses, true_pDLT, true_presp, cohortsize,  n_max, n_cap, n_stop, DLT_time, lambda, target = 0.3){
+BFBOIN <- function(doses, true_pDLT, true_presp, cohortsize,
+                   n_max, n_cap, n_stop, DLT_time, lambda, target = 0.3){
   
   #compute the parms for each of the true_pDLT
   doses_info <- data.frame('Dose' = doses, 'Prob_DLT' = true_pDLT, 'Shape_DLT' = rep(NA, length(doses)), 'Scale_DLT' = rep(NA, length(doses)), 'Prob_resp' = true_presp, 'Shape_resp' = rep(NA, length(doses)), 'Scale_resp' = rep(NA, length(doses)))
