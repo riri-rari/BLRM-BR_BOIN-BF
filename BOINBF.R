@@ -387,7 +387,7 @@ compute_BFBOIN <- function(cohort, doses_info, new_reference, cohortsize, n_max,
     }
           
     #possibility of backfilling
-    if(backfill == T){
+    if(isTRUE(backfill)){
     
     #strategy 1: binomial 
       
