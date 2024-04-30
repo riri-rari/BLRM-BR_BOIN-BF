@@ -1,7 +1,7 @@
 # Introduction 
 
-This code is aimed to implement the BF+BLRM algorithm. 
-
+These codes are aimed to implement the BF+BLRM algorithm. 
+Both codes are following the model in Barnet et al., but the BLRMBF.R code uses a the mean of the posterior probability witht the hard safety and k-fold-skipping rules, while the BLRMBF_EWCO.R code uses the interval approach with EWOC in Neuenschwander (up to now with some modifications). 
 
 # BF+BLRM 
 
