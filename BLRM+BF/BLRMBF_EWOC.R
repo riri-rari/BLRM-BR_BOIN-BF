@@ -87,7 +87,7 @@ check_individual_posterior <- function(pts, fail, dose, info_probs){
   beta <- info_probs %>% filter(Dose == dose) %>% select(beta)
   beta <- as.numeric(beta$beta) + pts - fail 
   
-  EWOC <- ifelse(pbeta(0.35, shape1 = alpha, shape2 = beta , lower.tail =  F) >= 0.25, F, T)
+  EWOC <- ifelse(pbeta(0.35, shape1 = alpha, shape2 = beta , lower.tail =  F) >= 0.75, F, T)
   
   return(EWOC)
 }
