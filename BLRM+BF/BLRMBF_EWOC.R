@@ -102,12 +102,13 @@ open_close_EWOC <- function(cohort, doses_info, current_dose, time_arrival = 100
   prob <- data.frame(matrix(ncol = length(doses_info$Dose), nrow = 9000)) #nrow = iterations - burnin
   
   #directly call the MCMC
-  results <- MCMC_adaptive_EWOC(cohort, doses_info, time_arrival, i_simulation = i_simulation, run = run) #iterations = 25000, burnin = 2500
+  results <- MCMC_adaptive_EWOC(cohort, doses_info, time_arrival, i_simulation = i_simulation, run = run) #iterations = 10000, burnin = 1000
+  results_nimble <- MCMC_nimble(cohort, doses_info, time_arrival, i_simulation = i_simulation, run = run)
+  
+  #compare with Nimble results 
   plot(as.mcmc(results$betas[, 1]))
   plot(as.mcmc(results$betas[, 2]))
-  
-  # results <- MCMC_nimble(cohort, doses_info, time_arrival, i_simulation = i_simulation, run = run)
-  # plot(as.mcmc(results$betas))
+  plot(as.mcmc(results_nimble$betas))
   
   #compute the probabilities (exp the beta_1 as you have samples of log(beta_1))
   for (i in 1:length(doses_info$Dose) ){
@@ -502,8 +503,8 @@ decision_EWOC <- function(cohort, doses_info, time_arrival = 1000, run, target =
   plot(as.mcmc(results$betas[, 1]))
   plot(as.mcmc(results$betas[, 2]))
   
-  results <- MCMC_nimble(cohort, doses_info, time_arrival, i_simulation = i_simulation, run = run)
-  plot(as.mcmc(results$betas))
+  results_nimble <- MCMC_nimble(cohort, doses_info, time_arrival, i_simulation = i_simulation, run = run)
+  plot(as.mcmc(results_nimble$betas))
   
   #compute the probabilities (exp the beta_1 as you have samples of log(beta_1) --> changed to have directly beta1 look at MCMC)
   for (i in 1:length(doses_info$Dose) ){
