@@ -156,7 +156,7 @@ logposterior <- function(data, betas){
   
   #vector of probabilities based on the betas and on the doses with the model dependign of beta0 and beta1 (transform with exp)
   logit_p <- betas[1] + exp(betas[2])*data$Doses
-  p <- exp(logit_p)/(1 + exp(logit_p))
+  p <- 1/(1 + exp(-logit_p)) 
 
   likelihood <- sum(dbinom(data$DLT, data$Pts, p, log = T))
   #prior for the values of beta0 and log(beta1)
@@ -185,33 +185,43 @@ MCMC <- function(cohort, doses_info, time_arrival, i_simulation, run, iterations
   
   data <- data.frame('DLT' = dlt$freq, 'Pts' = pts$pts, 'Doses' = doses$dose )
   
-  print(c('data', data))
+  #print(c('data', data))
+  mean_current <- c(0, 1)
   beta0_start <- 1
   beta1_start <- 0
   sigma_start <- matrix(c(1, 0, 0, 1), nrow = 2, ncol = 2)
 
   
-  print(c('parms', beta0_start, beta1_start, sigma_start))
+  #print(c('parms', beta0_start, beta1_start, sigma_start))
   
   #implement MCMC calling the logpost function 
   
   #parameters 
   n_accept <- 0
   beta_parms <- matrix(nrow = iterations, ncol = 2)
+  colnames(beta_parms) <- c('beta0', 'beta1')
   beta_parms[1, ] <- c(beta0_start, beta1_start)
+
+  lambda_proposed <- log((2.38^2)/2)
   
   for( i in 2:iterations){
   
-    log_ratio <- NaN
-    
-    while(is.na(log_ratio)){
-      
-      beta_proposal <- rmvnorm(n = 1, mean = c(1, 0), sigma = (sd^2)*sigma_start) #sampling of beta0 and log(beta1)
-      
-      log_now <- logposterior(data, beta_proposal)
-      log_previous <- logposterior(data, beta_parms[(i - 1), ])
-      log_ratio <- log_now - log_previous
+    beta_proposal <- rmvnorm(n = 1, mean = mean_current, sigma = exp(lambda_proposed)*sigma_current) #sampling of beta0 and log(beta1)
+     
+    log_now <- logposterior(data, beta_proposal)
+    log_previous <- logposterior(data, beta_parms[(i - 1), ])
+    log_ratio <- log_now - log_previous
+    #print(c('logratio', log_ratio))
 
+    #this shoudl not be entered
+    if(is.na(log_ratio)){
+      
+      print('change')
+      beta_parms[i, ] <- beta_parms[(i-1), ]
+      
+      #go to the next iteration
+      next
+      
     }
     
     u <- runif(1, min = 0, max = 1)
@@ -221,6 +231,19 @@ MCMC <- function(cohort, doses_info, time_arrival, i_simulation, run, iterations
     } else {
       beta_parms[i, ] <- beta_parms[(i-1), ]
     }
+    
+    #updating 
+    
+    #weights
+    gamma <- 1/(1 + (i - 1))^delta 
+    #update other parms 
+    #lambda tuning on the logscale
+    lambda_proposed <- gamma*(min(exp(log_ratio), 1) - 0.24) + lambda_proposed
+    #sigma varcov --> add a small value not to get stuck?
+    sigma_current <- sigma_current + gamma*((beta_parms[i, ] - mean_current)%*%t(beta_parms[i, ] - mean_current) - sigma_current )
+    #mean vector
+    mean_current <- mean_current + gamma*(beta_parms[i, ] - mean_current)
+    
   }
   
   #trim the dataset for the burnin 
@@ -229,9 +252,10 @@ MCMC <- function(cohort, doses_info, time_arrival, i_simulation, run, iterations
   #run and collect the diagnostics: Geweke and acceptance rate 
   diagnostics <- c(round(n_accept/(iterations - 1), digits = 2) * 100, geweke.diag(as.mcmc(beta_parms[, 1]))$z,  geweke.diag(as.mcmc(beta_parms[, 2]))$z )
 
+  #transform the beta1 direclty 
+  beta_parms[, 2] <- exp(beta_parms[, 2])
   
-  #need for the parms and for the diagnostics
-  return(list('betas' = colMeans(beta_parms), 'diagnostics' = diagnostics))
+  return(list('betas' = beta_parms, 'diagnostics' = diagnostics))
   
 }
  
@@ -240,10 +264,14 @@ decision <- function(cohort, doses_info, time_arrival = 1000, run, target = 0.3,
   
   #directly call the MCMC
   results <- MCMC(cohort, doses_info, time_arrival, i_simulation = i_simulation, run = run)
+  prob <- data.frame(matrix(ncol = length(doses_info$Dose), nrow = 9000))
   
   #compute the probabilities (exp the beta_1 as you have samples of log(beta_1))
-  logit_prob <- results$betas[1] + exp(results$betas[2])*doses_info$Dose
-  prob <- exp(logit_prob)/(1 + exp(logit_prob))
+  for (i in 1:length(doses_info$Dose) ){
+    logit_prob <- results$betas[, 1] + results$betas[, 2]*doses_info$Dose[i]
+    prob[, i] <- exp(logit_prob)/(1 + exp(logit_prob))
+    #hist(prob[, i])
+  }
   #compute the abs of the differences --> what if you have two? take the lowest possibly (that one coming from the lower side: conservative --> ask Alexandre or look for it on the net)  
   distances <- abs(prob - target)
   print(c('distances', distances))
