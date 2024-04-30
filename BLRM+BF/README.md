@@ -37,6 +37,10 @@ The decision_overtoxicity() function is aimed to compute the $P(\pi_{posterior} 
 The function takes in input the number of Pts at that dose (Pts), the number of DLT at that dose (DLT), the target toxicity (target, with default 0.3) and the cutoff for the probability (cutoff.eli, by default set to 0.95).
 Notes for me: It also uses the global variable cohortsize. 
 
+### check_individual_posterior()
+The check_individual_posterior() is a function aimed to compute the posterior probbailty of a probability rv (conjugacy between Beta and Binomial). It computes then the probability of being over the toxicity limit (Neuen 0.35 >= 0.25. Currently changed to 0.35 >= 0.75). The function is used to check, by the arrival of new backfiling patient, the goodness of the posterior probability for the cohort and for the backfilling arms. 
+The function returns a boolean variable that is T if the posterior is fine and it is F if the posterior is not fine. 
+
 ### open_cose()
 
 The open_close() function is used to decide whether a specific dose should be open or closed for backfilling. This is done in in two steps: 
@@ -49,6 +53,10 @@ The function takes in input the cohort dataset, the time of the current patient 
 
 The function returns ether 1 or 0, as specified above.
 
+### open_close_EWOC()
+
+The open_cloe_EWOC() function is aimed to find the optimal dose for backfilling. It exploits the MCMC to find the best dose matching with the target dose with the constraint of being lower than the current cohort dose (limit_dose set to the current dose index in the call of evaluate_posterior() function). Being an MCMC run then the function returns the diagnostics an the matrix of posterior probabilities information at each dose level. It returns also the chosen backfill dose.
+
 ### maximum_open()
 
 The maximum_open() function serves to find the maximum dose open for the backfill. The function loops over the doses (each time it takes the highest dose open for backfill and lower than the current cohort dose) until a dose can be kept open (change\_backfill switches from F to T). The function returns the found backfill dose and the updated doses\_info dataset.
@@ -60,6 +68,11 @@ If this function returns 1 then the dose is left open, while if it returns 0 the
 In the case that a dose is closed, then the cycle is entered again. If the dose is, instead, the right one (open\_close returns 1), the cycle is exit (change = T) and the current dose is returned. 
 
 The function takes in input the cohort dataset, the time of the current patient of backfll (time\_pts\_backfill), the dose that is currently under investigation (current\_dose), the dataset of info about the doses (doses\_info) and the reference dataset for the boundaries (new\_reference. See BFBOIN()) 
+
+### maximum_open_EWOC()
+
+The maximum_open_EWOC() function is aimed at finding the optimal dose for the backfilling arm by the arrival of the next patient. The function firslty finds the highest dose open for backfill and then checks if by the arrival of the current patients (time_pts_backfill) the dose level is still okay or not. To make the decision, the cohort arm and the current backfill dose arm are checked for their posterior probability of having P(x >= 0.35) >= 0.75 by means of the check_individual_posterior() function. If both the arms are okay, then the current backfill dose is used for the current patient and returned. If either of the arms is not okay then the open_close_EWOC() function is called and the optimal dose for the backfill is found by measn of MCMC run. The doses_info dataset is then updated such that all the doses over the current backfill one are closed for backfilling and all those avilable for being open (not -1 and not 2, see Appendix()) are open. In this scenario the chosen backfill dose, the diagnostics, the probabilities info and the updated version of the doses_info dataset are returned. 
+
 
 ### logposterior()
 
@@ -89,10 +102,40 @@ The function accepts the proposal folowing the rules of the MH algorithm. After 
 
 The function takes in input the cohort dataset (cohort), the dataset witht he doses information (doses_info), the time by which the next patient is arrived (time_arrival), the simulation and the run values (i_simualtion and run) and the iterations (set to 10000) as well as the burn-in values (set to 1000). The function returns the posterior means of the $\beta$ parms and the diagnostic list. 
 
+### MCMC_adaptive_EWOC()
+
+The MCMC_adaptvie_EWOC() function is aimed to compute the MCMC posterior densities estimates for the $\beta_0$ and $\log(\beta_1)$ parameters. It does so applying an adaptive Metropolis-Hastings algorithm. 
+
+Parameters: first $\lambda$ proposal is set to $log((2.38^2)/2)$ and the $\gamma$ is set to $\frac{1}{(1+i)^{\delta}}$, with $\delta = 0.01$. Accepetance rate = 0.24 in this way.
+A small value is added to the updated version of Sigma to avoid being stuck anf following the idea in https://keichenseer.com/post/a-metropolis-algorithm-in-r-part-2-adaptive-proposals/
+
+References: https://journals.sagepub.com/doi/pdf/10.1177/1536867X1401400309#cite.AT08@-11, https://biodatascience.github.io/statcomp/advmcmc/advmcmc.html#24_Adaptive_Metropolis_Algorithm, https://keichenseer.com/post/a-metropolis-algorithm-in-r-part-2-adaptive-proposals/
+
+### MCMC_nimble()
+
+The MCMC_nimble() function is aimed to compute the MCMC posterior density estimates for the the $\beta_0$ and $\log(\beta_1)$ parameters. It does so applying an adaptive Metropolis-Hastings algorithm exploiting the packge Nimble. This is used just for comaprative purposes. 
 
 ### decision()
 
 The decision() function calls the MCMC() function to compute the updated \beta parameters. It then computes the probability of DLT at each of the doses and evaluates which is closest to the target of 0.3 (Use of the LRmean 'approach' by Neuen). The logistic model used is the following: $Logit(\pi_i) = \beta_0 + \beta_1d_i $, with $d_i$ the dose of subject i.
+
+### evaluate_posterior()
+
+The evaluate_posterior() is a function that is aimed to compute the posterior probability ranges as described by Neun. It takes in input a vector of posterior distributions and gives in output the probability that maximizes the targeted toxicity range while controlling for the EWOC for the excessive or unacceptable toxicity ranges. 
+The function loops over all the computed a posteriori intervals and returns the probability index that maximizes it. It also checks if the potential probability is contolled for the EWOC (P(x >=0.35) > y, y = 0.75 currently): if the selected one is not okay with the toxicity check then the loop is entered again to find the second to maximum targeted interval. The loop ends either with a valid dose or with a NaN.  
+The function takes in input a limit dose that can resize the vector of possible doses to be evaluated (applied with the backfilling).
+
+NOTE: the EWOC is defined to control the p(overtoxicity) to be less and equal to 75%. IF we say less than 25% than it is impossible to go on. Ask Alexandre
+
+### compute_parameters()
+
+The compute_parameters() function is aimed to retrieve the parameters of a Beta distribution from the 25%, 50% and 75% quantile of it. It computes them starting from the distributions of the probabilities rv (Beta) an it involves the function rriskDistributions::get.beta.par(). 
+It returns the dataframe with the Beta parameters for all of the evaluated probabilties.
+
+### decision_EWOC()
+
+The decision_EWOC is a function that is aimed to take the decision regarding the next dose. It calls the MCMC() and it uses the computed $\beta$ to compute the posteriori probabilities. It then uses the function evaluate_posterior() to retrieve the index of the most correct probability according to Neuen. It returns the choice (the next dose), the diagnostics from the MCMC and the data frame with the parametrs of the posterior Beta distributions (to be used as priors, info_doses).
+
 
 ### k_fold_skipping()
 
@@ -165,6 +208,11 @@ The current dose (for the next cycle) is updated with the next dose found from e
 Note that in case the cohort has been assigned to a previously closed dose for backfill (due to no response), the evaaluation for the opening of this is done again and eventually the state is altered to 1 (the dose won't be used for backfilling if the cohort is at the same dose and this is due to the checkings of <= current_dose).
 
 THe function returns the entire patient set up dataframe (cohort), the counter (binary) for the early stops for safety and the counter (binary) for early stop for sufficient information.
+
+
+### compute_BFBLRM_EWOC()
+
+This function is analogous to compute_BFBLRM() one but it applies the rules of Neuens. for the finding of the optimal dose and it applies a different metholodogy to find deal with the backfilling.
 
 ### BFBLRM()
 
