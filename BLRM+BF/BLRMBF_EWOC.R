@@ -131,7 +131,7 @@ open_close_EWOC <- function(cohort, doses_info, current_dose, time_arrival = 100
   
 }
 
-#maximum_open_EWOC
+#maximum_open_EWOC()
 
 maximum_open_EWOC <- function(cohort, time_pts_backfill, current_dose, doses_info, info_probs, run, last_time){
   
@@ -185,16 +185,18 @@ maximum_open_EWOC <- function(cohort, time_pts_backfill, current_dose, doses_inf
    } 
    
    #ensure that the backfill dose is always lower than the current cohort dose
-   backup_doses <- doses_info %>% filter(Dose <= current_dose) %>% select(doses = Dose)
-   choice <- ifelse(results$choice >= current_dose, backup_doses$doses[(length(backup_doses$doses) - 1)], results$choice )
-   print(choice)
+   #backup_doses <- doses_info %>% filter(Dose <= current_dose) %>% select(doses = Dose)
+   #choice <- ifelse(results$choice >= current_dose, backup_doses$doses[(length(backup_doses$doses) - 1)], results$choice )
+   #print(choice)
    
    #imagine the selected dose (after the change. This after the change as we exclude some, while before we were closing or opening based on the true choice) can not be used since too many pts or not response, then do no put the pts
    
-   index_dose <- doses_info %>% filter(Dose == choice) %>% select(State)
+  index_dose <- doses_info %>% filter(Dose == results$choice) %>% select(State)
+   #print(c('index dose', index_dose$State))
    if (index_dose$State == -1 || index_dose$State == 2){
      current_backfill_dose <- NA
-   } else {current_backfill_dose <- choice}
+   } else {current_backfill_dose <- results$choice}
+   
    
     return(list('backfill_dose' = current_backfill_dose, 'info_probs' = results$info_probs, 'diagnostics' = results$diagnostics, 'doses_info' = doses_info))
     
@@ -447,7 +449,7 @@ evaluate_posterior <- function(prob, limit_dose = NA){
   
   targeted_interval <- ifelse(is.na(targeted_interval), 0, targeted_interval)
   
-  if (!is.na(limit_dose)){targeted_interval <- targeted_interval[1:limit_dose]
+  if (!is.na(limit_dose)){targeted_interval <- targeted_interval[1:(limit_dose - 1)]
   }
   
   while(isTRUE(excessive)){
