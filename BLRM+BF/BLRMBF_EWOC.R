@@ -87,7 +87,7 @@ check_individual_posterior <- function(pts, fail, dose, info_probs){
   beta <- info_probs %>% filter(Dose == dose) %>% select(beta)
   beta <- as.numeric(beta$beta) + pts - fail 
   
-  EWOC <- ifelse(pbeta(0.35, shape1 = alpha, shape2 = beta , lower.tail =  F) >= 0.75, F, T)
+  EWOC <- ifelse(pbeta(0.35, shape1 = alpha, shape2 = beta , lower.tail =  F) >= 0.25, F, T)
   
   return(EWOC)
 }
@@ -432,12 +432,10 @@ evaluate_posterior <- function(prob, limit_dose = NA){
   
   for(i in 1:ncol(prob)){
     
-    values <- prob[, i][prob[, i] < 0.35]
-    values <- values[values >= 0.20]
-    
-    targeted_interval[i] <- mean(values)
-    
-    excessive_interval[i] <- mean(prob[, i][prob[, i] >= 0.35])
+    values <- prob[, i]
+    targeted_interval[i] <- mean(values < 0.35) - mean(values <= 0.20)
+    excessive_interval[i] <- mean(values >= 0.35)
+ 
   }
   
   print(c('targeted', round(targeted_interval, 2)))
@@ -463,7 +461,7 @@ evaluate_posterior <- function(prob, limit_dose = NA){
     
     dose_index <- which(targeted_interval == max(targeted_interval))
     dose_index <- dose_index[length(dose_index)]
-    excessive <- ifelse(excessive_interval[dose_index] > 0.75, T, F) #is the same dose ok for the toxicity? If yes, then exit, otherwise loop again to find the next maximizing 
+    excessive <- ifelse(excessive_interval[dose_index] >= 0.25, T, F) #is the same dose ok for the toxicity? If yes, then exit, otherwise loop again to find the next maximizing 
     targeted_interval[dose_index] <- -targeted_interval[dose_index] #exclude from the next possible iteration
     
   }
