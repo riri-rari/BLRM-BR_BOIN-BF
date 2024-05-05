@@ -38,7 +38,7 @@ The function takes in input the number of Pts at that dose (Pts), the number of 
 Notes for me: It also uses the global variable cohortsize. 
 
 ### check_individual_posterior()
-The check_individual_posterior() is a function aimed to compute the posterior probbailty of a probability rv (conjugacy between Beta and Binomial). It computes then the probability of being over the toxicity limit (Neuen 0.35 >= 0.25. Currently changed to 0.35 >= 0.75). The function is used to check, by the arrival of new backfiling patient, the goodness of the posterior probability for the cohort and for the backfilling arms. 
+The check_individual_posterior() is a function aimed to compute the posterior probbailty of a probability rv (conjugacy between Beta and Binomial). It computes then the probability of being over the toxicity limit (Neuen 0.35 >= 0.25). The function is used to check, by the arrival of new backfiling patient, the goodness of the posterior probability for the cohort and for the backfilling arms. 
 The function returns a boolean variable that is T if the posterior is fine and it is F if the posterior is not fine. 
 
 ### open_cose()
@@ -125,7 +125,7 @@ The evaluate_posterior() is a function that is aimed to compute the posterior pr
 The function loops over all the computed a posteriori intervals and returns the probability index that maximizes it. It also checks if the potential probability is contolled for the EWOC (P(x >=0.35) > y, y = 0.75 currently): if the selected one is not okay with the toxicity check then the loop is entered again to find the second to maximum targeted interval. The loop ends either with a valid dose or with a NaN.  
 The function takes in input a limit dose that can resize the vector of possible doses to be evaluated (applied with the backfilling).
 
-NOTE: the EWOC is defined to control the p(overtoxicity) to be less and equal to 75%. IF we say less than 25% than it is impossible to go on. Ask Alexandre
+NOTE: the EWOC is defined to control the p(overtoxicity) to be less and equal to 25%.
 
 ### compute_parameters()
 
