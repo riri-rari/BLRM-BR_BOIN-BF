@@ -517,6 +517,8 @@ compute_BFBOIN <- function(cohort, doses_info, new_reference, cohortsize, n_max,
           possible_dose_state <- open_close(cohort, time_pts_backfill$time, higher_doses[i], new_reference, doses_info)
           if (possible_dose_state == 0){
             #keep the dose closed
+            #if the current_backfill_dose was not assigned yet then keep the current_maximum (as the first you try to open is not ok so you keep what you had). If not, keep the previous result that comes from later
+            current_backfill_dose <- ifelse(is.na(current_backfill_dose), current_maximum_backfill_dose, current_backfill_dose)
             break #it means that we can not open this and the upper ones 
           } else {
             # re-open the dose. the round's highest one is taken as the backfilling dose
@@ -647,6 +649,8 @@ compute_BFBOIN <- function(cohort, doses_info, new_reference, cohortsize, n_max,
 
 }
 
+  #reset the current_backfill_dose 
+  current_backfill_dose <- NA 
   #update the current dose based on the decision and the n_tot counter
   current_dose <- next_dose
 }
