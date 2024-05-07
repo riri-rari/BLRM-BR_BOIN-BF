@@ -59,10 +59,17 @@ decision <- function(new_reference, current_cohortsize, DLT){
   bounds <- new_reference %>% filter(Pts == current_cohortsize)
   change <- NULL
   
-if (DLT >= bounds$Eliminate){
-  change = 4
-} else if (DLT <= bounds$Escalate) { change = 1} else if (DLT >= bounds$Descalate) { change = 3 } else {change = 2}
+ #consider the case for which the boudn for Elimination is not there 
+  if(is.na(bounds$Eliminate)){
+    if (DLT <= bounds$Escalate) { change = 1} else if (DLT >= bounds$Descalate) { change = 3 } else {change = 2}
+    
+  } else {
   
+    if (DLT >= bounds$Eliminate){
+    change = 4
+  } else if (DLT <= bounds$Escalate) { change = 1} else if (DLT >= bounds$Descalate) { change = 3 } else {change = 2}
+      
+  }
   return(change)
   
 }
@@ -895,9 +902,9 @@ simulate_BFBOIN <- function(n_simulation, real_mtd){
   #compute the summary stats 
   
   #mean percentage of pts at each level --> compute ONLY on cohort people 
-  perc_pud <- results_simulation$N_under_dosing/pts_total * 100
-  perc_pmtd <- results_simulation$N_MTD/pts_total * 100
-  perc_pod <- results_simulation$N_over_dosing/pts_total * 100
+  perc_pud <- results_simulation$N_under_dosing/results_simulation$pts_total * 100
+  perc_pmtd <- results_simulation$N_MTD/results_simulation$pts_total * 100
+  perc_pod <- results_simulation$N_over_dosing/results_simulation$pts_total * 100
   
   #percentages of times MTD was found 
   mtd_perc <- sum(results_simulation$MTD == real_mtd)/n_simulation * 100
@@ -909,3 +916,5 @@ simulate_BFBOIN <- function(n_simulation, real_mtd){
 ## Simualtion example with 1 call for the real MTD at dose 3 
 
 final <- simulate_BFBOIN(1, 3)
+
+---------------------------------------------------------------------------------------------
