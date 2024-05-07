@@ -64,10 +64,10 @@ decision <- function(new_reference, current_cohortsize, DLT){
     if (DLT <= bounds$Escalate) { change = 1} else if (DLT >= bounds$Descalate) { change = 3 } else {change = 2}
     
   } else {
-  
+  #consider FDA reviewd BOIN limits 
     if (DLT >= bounds$Eliminate){
     change = 4
-  } else if (DLT <= bounds$Escalate) { change = 1} else if (DLT >= bounds$Descalate) { change = 3 } else {change = 2}
+  } else if (DLT <= bounds$Escalate) { change = 1} else if (DLT > bounds$Descalate) { change = 3 } else {change = 2}
       
   }
   return(change)
