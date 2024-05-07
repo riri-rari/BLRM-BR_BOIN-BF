@@ -21,7 +21,7 @@ The computed information are returned as a list. A summary of the time values is
 
 #### decision()
 
-The decision function is devoted to consult the table of decisions (reference\_general. Computed with the BOIN::get.boundary() function or the get\_boundaries() function under the same priors scenario) at the current number of patients. The function then outputs the decision (change) that can take four values: 1 = 'ESCALATE', 2 = 'STAY', 3 = 'DESCALATE', 4 = 'ELIMINATE'. 
+The decision function is devoted to consult the table of decisions (reference\_general. Computed with the BOIN::get.boundary() function or the get\_boundaries() function under the same priors scenario) at the current number of patients. The function then outputs the decision (change) that can take four values: 1 = 'ESCALATE', 2 = 'STAY', 3 = 'DESCALATE', 4 = 'ELIMINATE'. The function takes care of the review from FDA https://www.google.com/url?sa=t&source=web&rct=j&opi=89978449&url=https://www.fda.gov/media/155364/download&ved=2ahUKEwjDpImqjfuFAxVLSfEDHaEXBFgQFnoECBMQAQ&usg=AOvVaw2gMeg-rLC1ZMSKTZqx1dBa 
 
 #### backfill_patients()
 
