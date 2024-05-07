@@ -103,18 +103,18 @@ open_close_EWOC <- function(cohort, doses_info, current_dose, time_arrival = 100
   
   #directly call the MCMC
   results <- MCMC_adaptive_EWOC(cohort, doses_info, time_arrival, i_simulation = i_simulation, run = run) #iterations = 10000, burnin = 1000
-  results_nimble <- MCMC_nimble(cohort, doses_info, time_arrival, i_simulation = i_simulation, run = run)
+  #results_nimble <- MCMC_nimble(cohort, doses_info, time_arrival, i_simulation = i_simulation, run = run)
   
   #compare with Nimble results 
-  plot(as.mcmc(results$betas[, 1]))
-  plot(as.mcmc(results$betas[, 2]))
-  plot(as.mcmc(results_nimble$betas))
+  #plot(as.mcmc(results$betas[, 1]))
+  #plot(as.mcmc(results$betas[, 2]))
+  #plot(as.mcmc(results_nimble$betas))
   
   #compute the probabilities (exp the beta_1 as you have samples of log(beta_1))
   for (i in 1:length(doses_info$Dose) ){
-    logit_prob <- results$betas[, 1] + results$betas[, 2]*doses_info$Dose[i]
+    logit_prob <- results$betas[, 1] + results$betas[, 2]*log(doses_info$Dose[i]/reference_dose)
     prob[, i] <- exp(logit_prob)/(1 + exp(logit_prob))
-    hist(prob[, i])
+    #hist(prob[, i])
   }
  
   #compute the alpha and beta parsm from the quantiles of the posteriors and store them to be used later 
@@ -215,7 +215,7 @@ logposterior <- function(data, betas){
   prior_var <- matrix(c(4, 0 ,0, 1), nrow = 2)
   
   #vector of probabilities based on the betas and on the doses with the model dependign of beta0 and beta1 (transform with exp)
-  logit_p <- betas[1] + exp(betas[2])*data$Dose
+  logit_p <- betas[1] + exp(betas[2])*log(data$Dose/reference_dose)
   p <- 1/(1 + exp(-logit_p))
 
   likelihood <- sum(dbinom(data$DLT, data$Pts, p, log = T))
@@ -306,9 +306,9 @@ MCMC_adaptive_EWOC <- function(cohort, doses_info, time_arrival, i_simulation = 
   
   data <- data.frame('DLT' = dlt$freq, 'Pts' = pts$pts, 'Doses' = dlt$Dose )
   print(data)
-  
-  mean_current <- c(0, 1)
-  beta0_start <- 0
+
+  mean_current <- c(1, 1)
+  beta0_start <- 1 
   beta1_start <- 1
   sigma_current <- matrix(c(1, 0, 0, 1), nrow = 2, ncol = 2)
   
@@ -438,8 +438,8 @@ evaluate_posterior <- function(prob, limit_dose = NA){
  
   }
   
-  print(c('targeted', round(targeted_interval, 2)))
-  print(c('excessive', round(excessive_interval, 2)))
+  #print(c('targeted', round(targeted_interval, 2)))
+  #print(c('excessive', round(excessive_interval, 2)))
   
   targeted_interval <-  round(targeted_interval, 2)
   excessive_interval <-  round(excessive_interval, 2)
@@ -497,20 +497,20 @@ decision_EWOC <- function(cohort, doses_info, time_arrival = 1000, run, target =
   prob <- data.frame(matrix(ncol = length(doses_info$Dose), nrow = 9000)) #nrow = iterations - burnin
   
   #directly call the MCMC
-  results <- MCMC_adaptive_EWOC(cohort, doses_info, time_arrival, i_simulation = i_simulation, run = run) #iterations = 25000, burnin = 2500
+  results <- MCMC_adaptive_EWOC(cohort, doses_info, time_arrival, i_simulation = i_simulation, run = run) #iterations = 10000, burnin = 1000
 
   #compare the results with Nimble 
-  plot(as.mcmc(results$betas[, 1]))
-  plot(as.mcmc(results$betas[, 2]))
+  #plot(as.mcmc(results$betas[, 1]))
+  #plot(as.mcmc(results$betas[, 2]))
   
   results_nimble <- MCMC_nimble(cohort, doses_info, time_arrival, i_simulation = i_simulation, run = run)
-  plot(as.mcmc(results_nimble$betas))
+  #plot(as.mcmc(results_nimble$betas))
   
   #compute the probabilities (exp the beta_1 as you have samples of log(beta_1) --> changed to have directly beta1 look at MCMC)
   for (i in 1:length(doses_info$Dose) ){
-    logit_prob <- results$betas[, 1] + results$betas[, 2]*doses_info$Dose[i]
+    logit_prob <- results$betas[, 1] + results$betas[, 2]*log(doses_info$Dose[i]/reference_dose)
     prob[, i] <- exp(logit_prob)/(1 + exp(logit_prob))
-    hist(prob[, i])
+    #hist(prob[, i])
   }
  
   
@@ -616,7 +616,7 @@ compute_BFBLRM_EWOC <- function(cohort, doses_info, cohortsize, n_max, n_cap, n_
       #check for SUfficient information (same as 3cohorts + 'STAY')
       if (next_dose == current_dose){
         Pts <- cohort %>% filter(Dose == current_dose) %>% summarise(pts = n())
-        if(Pts$pts == n_stop){
+        if(Pts$pts >= n_stop){
           n_stop_reached <- n_stop_reached + 1
           break
         }
@@ -756,7 +756,7 @@ compute_BFBLRM_EWOC <- function(cohort, doses_info, cohortsize, n_max, n_cap, n_
     #check for SUfficient information (same as 3cohorts + 'STAY')
     if (next_dose == current_dose){
       Pts <- cohort %>% filter(Dose == current_dose) %>% summarise(pts = n())
-      if(Pts$pts == n_stop){
+      if(Pts$pts >= n_stop){
         n_stop_reached <- n_stop_reached + 1
         break
       }
