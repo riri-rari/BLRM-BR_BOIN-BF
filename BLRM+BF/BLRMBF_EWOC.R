@@ -847,29 +847,36 @@ lambda <- 6
 
 
 # Scenario 0
+reference_dose <- 0.75
 true_pDLT <- c(0.40, 0.45, 0.50, 0.55, 0.60, 0.65)
 true_presp <- c(0.3, 0.4, 0.45, 0.5, 0.55, 0.6)
 # Scenario 1
+reference_dose <- 1.51
 true_pDLT <- c(0.25, 0.41, 0.45, 0.49, 0.53, 0.57)
 true_presp <- c(0.3, 0.4, 0.45, 0.5, 0.55, 0.6)
 # Scenario 2
+reference_dose <- 2.51
 true_pDLT <- c(0.12, 0.25, 0.42, 0.49, 0.55, 0.62)
 true_presp <- c(0.2, 0.3, 0.4, 0.5, 0.6, 0.7)
 # Scenario 3
+reference_dose <- 3.51
 true_pDLT <- c(0.04, 0.12, 0.25, 0.43, 0.63, 0.75)
 true_presp <- c(0.1, 0.2, 0.3, 0.45, 0.58, 0.67)
 # Scenario 4 
+reference_dose <- 4.51
 true_pDLT <- c(0.02, 0.06, 0.1, 0.25, 0.4, 0.5)
 true_presp <- c(0.05, 0.1, 0.15, 0.3, 0.45, 0.55)
 # Scenario 5
+reference_dose <- 6.1
 true_pDLT <- c(0.02, 0.05, 0.08, 0.11, 0.25, 0.39)
 true_presp <- c(0.05, 0.1, 0.15, 0.2, 0.3, 0.4)
 #scenario 6
+reference_dose <- 7.1
 true_pDLT <- c(0.02, 0.05, 0.10, 0.15, 0.20, 0.3)
 true_presp <- c(0.05, 0.1, 0.15, 0.2, 0.3, 0.4)
 
 #try new scenario a scenario 6 with higher probs of response at lower doses and see 
-
+reference_dose <- 7.1
 true_pDLT <- c(0.02, 0.05, 0.10, 0.15, 0.20, 0.3)
 true_presp <- c(0.3, 0.35, 0.35, 0.4, 0.41, 0.44)
 
