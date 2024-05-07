@@ -61,7 +61,7 @@ decision <- function(new_reference, current_cohortsize, DLT){
   
  #consider the case for which the boudn for Elimination is not there 
   if(is.na(bounds$Eliminate)){
-    if (DLT <= bounds$Escalate) { change = 1} else if (DLT >= bounds$Descalate) { change = 3 } else {change = 2}
+    if (DLT <= bounds$Escalate) { change = 1} else if (DLT > bounds$Descalate) { change = 3 } else {change = 2}
     
   } else {
   #consider FDA reviewd BOIN limits 
