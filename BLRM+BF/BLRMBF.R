@@ -155,7 +155,7 @@ logposterior <- function(data, betas){
   prior_var <- matrix(c(4, 0 ,0, 1), nrow = 2)
   
   #vector of probabilities based on the betas and on the doses with the model dependign of beta0 and beta1 (transform with exp)
-  logit_p <- betas[1] + exp(betas[2])*data$Doses
+  logit_p <- betas[1] + exp(betas[2])*log(data$Doses/reference_dose)
   p <- 1/(1 + exp(-logit_p)) 
 
   likelihood <- sum(dbinom(data$DLT, data$Pts, p, log = T))
@@ -268,7 +268,7 @@ decision <- function(cohort, doses_info, time_arrival = 1000, run, target = 0.3,
   
   #compute the probabilities (exp the beta_1 as you have samples of log(beta_1))
   for (i in 1:length(doses_info$Dose) ){
-    logit_prob <- results$betas[, 1] + results$betas[, 2]*doses_info$Dose[i]
+    logit_prob <- results$betas[, 1] + results$betas[, 2]*log(doses_info$Dose[i]/reference_dose)
     prob[, i] <- exp(logit_prob)/(1 + exp(logit_prob))
     #hist(prob[, i])
   }
