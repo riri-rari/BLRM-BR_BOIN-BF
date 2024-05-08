@@ -1,6 +1,6 @@
 # Introduction 
 
-This code is aimed to implement the BF+BOIN algorithm.
+These codes are aimed to implement the BF+BOIN algorithm with and without Accelerate titration.
 
 ## Backfill + BOIN 
 
