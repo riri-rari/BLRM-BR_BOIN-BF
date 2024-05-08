@@ -17,7 +17,9 @@ The function retrieves the parameters of the Weibull distribution at the current
 
 Regardless of the patient's number, the time for the DLT is computed (time\_DLT), the DLT is computed and the limit_time is computed (this represents the point in time when the patient is stopped to be followed-up).
 
-The computed information are returned as a list. A summary of the time values is in Appendix 2
+The computed information are returned as a list. A summary of the time values is in Appendix 2. 
+
+Note that in the BOINBF_AT.R this function takes in input also the cohortsize that has a default value of 3. 
 
 #### decision()
 
@@ -87,6 +89,11 @@ The transform\_data() function is only aimed to properly set the class of the co
 
 The transform\_data() function is only aimed to properly set the class of the cohort data frame columns. It takes in input the original cohort dataset and it returns the transformed one. 
 
+### backfill_arm()
+
+This function is aime to compute and assign the backfill patients. The function is completely analogous to the internal functionin of the compute\_BOIN() function for the assignment of the backfilled patients. For more informations see compute\_BOIN() and compute\_BOIN\_at()
+
+
 ### compute_BFBOIN()
 
 The compute\_BFBOIN is a function devoted to performing the allocation procedure following the BF+BOIN logic. The functions takes in input the cohort dataset (cohort), the dataset of doses info (doses_info), the dataset with the boundaries for the decision (new\_reference), the limiting values for the total patients, the total patients for backfill and the total patients for cohort (n\_max, n\_cap and n\_stop), the time of followup (DLT\_time), the rate of accrual during the follow-up period (lambda) and the simulation parameter (i_simulation). It returns the cohort dataset with all the patients allocated, the safety and the sufficient info values. 
@@ -143,9 +150,15 @@ Note that in case the cohort has been assigned to a previously closed dose for b
 
 THe function returns the entire patient set up dataframe (cohort), the counter (binary) for the early stops for safety and the counter (binary) for early stop for sufficient information.
 
-### BFBOIN()
+### compute_BFBOIN_at()
 
-The function BFBOIN() takes in input the doses, the true probabilities of DLT and response, the cohortsize, the maximum number of patients, the total patients for backfill and the total patients for cohort (n\_max, n\_cap and n\_stop), the DLT time (DLT\_time), the rate of accrual during the DLT time (lambda) and the target DLT rate (target). It creates the dataframe doses\_info with all the information regarding the dose levels (dose, probability of DLT and response, the shape and scale parameters of the Weibull distributions and the state). It calls the get.boundary() function from the BOIN library (can be substituted with the other one) and then it calls the compute\_BFBOIN() to compute the allocation of the patients. It returns then the object results. 
+This function performs the same tasks as the compute_BFBOIN() function with the difference that it acomodates the Accelerated titration scheme. Starting with a cohort size of 1, the function checks whetehr the first patient has a DLT or not. In the firts case, it will enlarge the current cohortsize to 3 (thanks to a counter variable ('counter') this happens with the change from the cohort of 1 to 3 only) and it will set the following cohort sizes to that value. The decision for the next cohort is taken in the same way as described in compute_BOIN() as well as the possibiloty for backfill. In case of no DLT, the decisin is to escalate and the possibloty for backfill is always T. 
+
+As soon as the backfill is possible and open, patients are assigned to the backfill while the main cohort waits for the Limit\_time. In the case for which there is still the accelerated titration ongoing, all the patients arriving before the Limit\_time will be eventually put in the backfill arm. If the cohort patient experiences a DLT then the next 2 patients will be used to enlarge the cohort and while waiting for their Limit_time the incoming patients are eventually assigned to the backfill arm. In this scenario the decision is taken in the same way as in the compute_BOIN() function. To simplify the readability of the code, the function backfill\_arm() is used to compute and assign the backfilled patients. 
+
+### BFBOIN() and BFBOIN_at()
+
+The function BFBOIN() takes in input the doses, the true probabilities of DLT and response, the cohortsize, the maximum number of patients, the total patients for backfill and the total patients for cohort (n\_max, n\_cap and n\_stop), the DLT time (DLT\_time), the rate of accrual during the DLT time (lambda) and the target DLT rate (target). It creates the dataframe doses\_info with all the information regarding the dose levels (dose, probability of DLT and response, the shape and scale parameters of the Weibull distributions and the state). It calls the get.boundary() function from the BOIN library (can be substituted with the other one) and then it calls the compute\_BFBOIN() (compute\_BFBOIN\_at()) to compute the allocation of the patients. It returns then the object results. 
 
 ## Implementation 
 
