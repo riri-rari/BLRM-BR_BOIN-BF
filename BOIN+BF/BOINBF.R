@@ -875,7 +875,7 @@ simulate_BFBOIN <- function(n_simulation, real_mtd){
     
     #find the MTD --> to check how often the true MTD is found 
     new_results <- transform_data(results$cohort) 
-    y <- new_results %>% group_by(Dose) %>% summarise(y = sum(Pts))
+    y <- new_results %>% group_by(Dose) %>% summarise(y = length(Pts))
     tox <- new_results %>% group_by(Dose) %>% summarise(tox = sum(DLT))
     
     y <- subset(y, !is.na(Dose))
@@ -906,9 +906,9 @@ simulate_BFBOIN <- function(n_simulation, real_mtd){
   #compute the summary stats 
   
   #mean percentage of pts at each level --> compute ONLY on cohort people 
-  perc_pud <- results_simulation$N_under_dosing/results_simulation$pts_total * 100
-  perc_pmtd <- results_simulation$N_MTD/results_simulation$pts_total * 100
-  perc_pod <- results_simulation$N_over_dosing/results_simulation$pts_total * 100
+  perc_pud <- results_simulation$N_under_dosing/results_simulation$Pts * 100
+  perc_pmtd <- results_simulation$N_MTD/results_simulation$Pts * 100
+  perc_pod <- results_simulation$N_over_dosing/results_simulation$Pts * 100
   
   #percentages of times MTD was found 
   mtd_perc <- sum(results_simulation$MTD == real_mtd)/n_simulation * 100
