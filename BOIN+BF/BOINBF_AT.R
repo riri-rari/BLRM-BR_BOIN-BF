@@ -968,7 +968,7 @@ simulate_BFBOIN_at <- function(n_simulation, real_mtd){
     pod <- new_results %>% filter(Dose > real_mtd) %>% summarise(pts = n()) 
     pts_total <- nrow(new_results)
     
-    length <- new_results %>% tail(1) %>% select(time = Time_arrival)
+    length <- new_results %>% summarise(time = max(Limit_time))
     
     Safety_stop <- results$safety
     Sufficient_info <- results$sufficient_info
@@ -990,7 +990,7 @@ simulate_BFBOIN_at <- function(n_simulation, real_mtd){
   #percentages of times MTD was found 
   mtd_perc <- sum(results_simulation$MTD == real_mtd)/n_simulation * 100
   
-  return(list('Mean_perc_pud' = mean(perc_pud), 'Mean_pud' = mean(results_simulation$N_under_dosing),'Mean_perc_pmtd' = mean(perc_pmtd), 'Mean_pmtd' = mean(results_simulation$N_MTD), 'Mean_perc_pod' = mean(perc_pod), 'Mean_pod' = mean(results_simulation$N_over_dosing), 'Mean_pts' = mean(pts_total), 'Mean_lenght' = mean(results_simulation$Length), 'Mean_SS' = mean(results_simulation$Safety_stop), 'Mean_SI' = mean(results_simulation$Sufficient_info), 'Perc_mtd' = mtd_perc))
+  return(list('Mean_perc_pud' = mean(perc_pud), 'Mean_pud' = mean(results_simulation$N_under_dosing),'Mean_perc_pmtd' = mean(perc_pmtd), 'Mean_pmtd' = mean(results_simulation$N_MTD), 'Mean_perc_pod' = mean(perc_pod), 'Mean_pod' = mean(results_simulation$N_over_dosing), 'Mean_pts' = mean(results_simulation$Pts), 'Mean_lenght' = mean(results_simulation$Length), 'Mean_SS' = mean(results_simulation$Safety_stop), 'Mean_SI' = mean(results_simulation$Sufficient_info), 'Perc_mtd' = mtd_perc))
   
 }
 
