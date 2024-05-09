@@ -297,7 +297,9 @@ merged_decision <- function(new_reference, cohort, dose_cohort, dose_backfill, l
       if (dose_backfill$max_dose != min(doses)){
         safe_dose <- doses[(which(doses == dose_backfill$max_dose) - 1)]
       } else {
-        safe_dose <- dose_backfill$max_dose
+        #otherwise too permessive
+        safe_dose <- NA
+        #safe_dose <- dose_backfill$max_dose
       }
       
     }
@@ -913,7 +915,7 @@ simulate_BFBOIN <- function(n_simulation, real_mtd){
   #percentages of times MTD was found 
   mtd_perc <- sum(results_simulation$MTD == real_mtd)/n_simulation * 100
   
-  return(list('Mean_perc_pud' = mean(perc_pud), 'Mean_pud' = mean(results_simulation$N_under_dosing),'Mean_perc_pmtd' = mean(perc_pmtd), 'Mean_pmtd' = mean(results_simulation$N_MTD), 'Mean_perc_pod' = mean(perc_pod), 'Mean_pod' = mean(results_simulation$N_over_dosing), 'Mean_pts' = mean(results_simulation$Pts), 'Mean_lenght' = mean(results_simulation$Length), 'Mean_SS' = mean(results_simulation$Safety_stop), 'Mean_SI' = mean(results_simulation$Sufficient_info), 'Perc_mtd' = mtd_perc))
+  return(list('Mean_perc_pud' = mean(perc_pud), 'Mean_pud' = mean(results_simulation$N_under_dosing),'Mean_perc_pmtd' = mean(perc_pmtd), 'Mean_pmtd' = mean(results_simulation$N_MTD), 'Mean_perc_pod' = mean(perc_pod), 'Mean_pod' = mean(results_simulation$N_over_dosing), 'Mean_pts' = mean(results_simulation$Pts), 'Mean_lenght' = mean(results_simulation$Length), 'Perc_SS' = mean(results_simulation$Safety_stop)*100, 'Perc_SI' = mean(results_simulation$Sufficient_info)*100, 'Perc_mtd' = mtd_perc))
   
 }
 
