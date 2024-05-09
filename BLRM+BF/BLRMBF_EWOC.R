@@ -396,8 +396,8 @@ MCMC_nimble <- function(cohort, doses_info, time_arrival, i_simulation = 0, run,
     
   }
   
-  beta[1] ~ dnorm(0, 1)
-  beta[2] ~ dnorm(1, 1)
+  beta[1] ~ dnorm(log(0.5), 2)
+  beta[2] ~ dnorm(0, 1)
 } )
   
   
