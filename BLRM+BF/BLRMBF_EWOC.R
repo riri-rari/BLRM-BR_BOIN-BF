@@ -379,8 +379,8 @@ MCMC_adaptive_EWOC <- function(cohort, doses_info, time_arrival, i_simulation = 
 }
 
 #MCMC_nimble
-
-MCMC_nimble <- function(cohort, doses_info, time_arrival, i_simulation = 0, run, iterations = 10000, burnin = 1000, delta = 0.01){
+#NOTE: reference_dose to a default of 2.51. MUST be changed at need
+MCMC_nimble <- function(cohort, doses_info, time_arrival, i_simulation = 0, run, iterations = 10000, burnin = 1000, delta = 0.01, reference_dose = 2.51){
   
   #set the seed according to the run and to the simulation number. Ok global variables  
   set.seed((1234 + run + i_simulation))
@@ -403,7 +403,7 @@ MCMC_nimble <- function(cohort, doses_info, time_arrival, i_simulation = 0, run,
   
   N <- nrow(data)
   my.data <- list(et = data$DLT, Dose = data$Dose)
-  my.constants <- list(pts = N)
+  my.constants <- list(pts = N, reference_dose = reference_dose)
 
   my.inits <- list(list(beta = c(0,0)))
 
