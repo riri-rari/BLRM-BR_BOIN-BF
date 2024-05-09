@@ -78,7 +78,7 @@ The maximum_open_EWOC() function is aimed at finding the optimal dose for the ba
 
 The logposterior() function is aimed to compute the logarithm of the posterior distribution for the $\beta$ parameters that are used inthe logistic model as specified by the following model: 
 
-$Logit(\pi_i) = \beta_0 + \beta_1d_i $, with $d_i$ the dose of subject i. 
+$Logit(\pi_i) = \beta_0 + \beta_1log(\frac{d_i}{d_ref}) $, with $d_i$ the dose of subject i. 
 
 The prior that is used is the following:
 
