@@ -113,7 +113,7 @@ References: https://journals.sagepub.com/doi/pdf/10.1177/1536867X1401400309#cite
 
 ### MCMC_nimble()
 
-The MCMC_nimble() function is aimed to compute the MCMC posterior density estimates for the the $\beta_0$ and $\log(\beta_1)$ parameters. It does so applying an adaptive Metropolis-Hastings algorithm exploiting the packge Nimble. This is used just for comaprative purposes. 
+The MCMC_nimble() function is aimed to compute the MCMC posterior density estimates for the the $\beta_0$ and $\log(\beta_1)$ parameters. It does so applying an adaptive Metropolis-Hastings algorithm exploiting the packge Nimble. This is used just for comaprative purposes. Note that the reference_dose must be manually chnaged in the function specification. 
 
 ### decision()
 
