@@ -865,7 +865,7 @@ select.mtd(target = 0.3, npts = y$y, ntox = tox$tox)
 ---------------------------------------------------------------------------------------------------------------------------------------------------------------
 # Simulation 
 
-simulate_BFBOIN <- function(n_simulation, real_mtd){
+simulate_BFBOIN <- function(n_simulation, target = 0.3, real_mtd){
   
   
   results_simulation <- data.frame('N_under_dosing' = as.numeric(rep(NA, n_simulation)), 'N_MTD' = as.numeric(rep(NA, n_simulation)), 'N_over_dosing' = as.numeric(rep(NA, n_simulation)),'Pts' = as.numeric(rep(NA, n_simulation)) , 'Length' = as.numeric(rep(NA, n_simulation)), 'Safety_stop' = as.numeric(rep(NA, n_simulation)), 'Sufficient_info' = as.numeric(rep(NA, n_simulation)), 'MTD' = as.numeric(rep(NA, n_simulation)))
@@ -883,7 +883,11 @@ simulate_BFBOIN <- function(n_simulation, real_mtd){
     y <- subset(y, !is.na(Dose))
     tox <- subset(tox, !is.na(Dose))
     
-    mtd_estimated <- select.mtd(target = 0.3, npts = y$y, ntox = tox$tox)$MTD 
+    mtd_estimated <- select.mtd(target = target, npts = y$y, ntox = tox$tox)$MTD 
+    #in case no dose is safe then put the 0 
+    mtd_estimated <- ifelse(mtd_estimated == 99, 0, mtd_estimated)
+    
+    
     
     
     #obtain the needed values 
