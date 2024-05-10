@@ -683,7 +683,7 @@ BFBOIN <- function(doses, true_pDLT, true_presp, cohortsize,  n_max, n_cap, n_st
   
 
   #get the reference table
-  reference_general <- get.boundary(target = 0.3, ncohort = 10, cohortsize = 3)$full_boundary_tab
+  reference_general <- get.boundary(target = target, ncohort = ceiling(n_max/3), cohortsize = cohortsize)$full_boundary_tab
   #manage to easier decision() handling
   new_reference <- as.data.frame(t(reference_general))
   colnames(new_reference) <- c('Pts', 'Escalate','Descalate','Eliminate')
