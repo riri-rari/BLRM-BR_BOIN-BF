@@ -332,7 +332,7 @@ transform_data_doses <- function(doses_info){
 
 
 #### backfill_arm()
-backfill_arm <- function(cohort, doses_info, new_reference, run, pts, previous_time, limit_time, n_max, i_simulation, current_dose){
+backfill_arm <- function(cohort, doses_info, new_reference, run, pts, previous_time, limit_time, n_max, i_simulation, current_dose, current_backfill_dose){
   
     update <- backfill_patients(cohort, run, pts, previous_time = previous_time, limit_time = limit_time, n_max, i_simulation = i_simulation)
     cohort <- transform_data(update$cohort)
@@ -415,7 +415,7 @@ backfill_arm <- function(cohort, doses_info, new_reference, run, pts, previous_t
     }   
   }
   
-  return(list('cohort' = cohort, 'doses_info' = doses_info, 'discarded' = discarded, 'pts' = pts, 'last_arrival' = last_arrival, 'last_lag' = last_lag))
+  return(list('cohort' = cohort, 'doses_info' = doses_info, 'discarded' = discarded, 'pts' = pts, 'last_arrival' = last_arrival, 'last_lag' = last_lag, 'current_backfill_dose' = current_backfill_dose, current_backfill_dose))
 }
 
 
@@ -594,7 +594,7 @@ compute_BFBOIN_at <- function(cohort, doses_info, new_reference, cohortsize, n_m
     if(pts >= n_max){break}
     
     #call the function for backfill 
-    backfill <- backfill_arm(cohort = cohort, doses_info = doses_info, new_reference = new_reference, run = run, pts = pts, previous_time = previous_time, limit_time = limit_time, n_max , i_simulation = i_simulation, current_dose = current_dose)
+    backfill <- backfill_arm(cohort = cohort, doses_info = doses_info, new_reference = new_reference, run = run, pts = pts, previous_time = previous_time, limit_time = limit_time, n_max , i_simulation = i_simulation, current_dose = current_dose, current_backfill_dose = current_backfill_dose)
      
     cohort <- transform_data(backfill$cohort)
     doses_info <- transform_data_doses(backfill$doses_info)
@@ -602,6 +602,7 @@ compute_BFBOIN_at <- function(cohort, doses_info, new_reference, cohortsize, n_m
     last_arrival <- backfill$last_arrival
     last_lag <- backfill$last_lag
     discarded <- backfill$discarded
+    current_backfill_dose <- backfill$current_backfill_dose
     
     pts <- pts - discarded
     #check the number of patients
@@ -622,7 +623,7 @@ compute_BFBOIN_at <- function(cohort, doses_info, new_reference, cohortsize, n_m
       if(pts >= n_max){break}
       
       #call the function for backfill 
-      backfill <- backfill_arm(cohort = cohort, doses_info = doses_info, new_reference = new_reference, run = run, pts = pts, previous_time = previous_time, limit_time = limit_time, n_max , i_simulation = i_simulation, current_dose = current_dose)
+      backfill <- backfill_arm(cohort = cohort, doses_info = doses_info, new_reference = new_reference, run = run, pts = pts, previous_time = previous_time, limit_time = limit_time, n_max , i_simulation = i_simulation, current_dose = current_dose, current_backfill_dose = current_backfill_dose)
      
       cohort <- transform_data(backfill$cohort)
       doses_info <- transform_data_doses(backfill$doses_info)
@@ -731,6 +732,8 @@ compute_BFBOIN_at <- function(cohort, doses_info, new_reference, cohortsize, n_m
     next_dose <- next_dose$safe_dose
 
 }
+  #reset the current_backfill_dose
+  current_backfill_dose <- NA  
   #update the current dose based on the decision and the n_tot counter
   current_dose <- next_dose
   #print(c('1224',pts))
