@@ -476,12 +476,11 @@ compute_BFBOIN_at <- function(cohort, doses_info, new_reference, cohortsize, n_m
            }
       
     } else {
-      print(c('dlt', patient$dlt))
+
       #restore the classic dose escalation cohortsize 
-      print(counter)
       if (counter == 1){
-        print('enlarging')
         #enlarge the cohort used 
+        run <- run + 1
         update <- cohort_patient(cohort, doses_info, current_dose, run, pts, previous_time = limit_time, i_simulation = i_simulation, cohortsize = current_cohortsize - 1)
         
         counter <- 0 #reset the counter 
@@ -494,8 +493,7 @@ compute_BFBOIN_at <- function(cohort, doses_info, new_reference, cohortsize, n_m
         #check the number of pts
         if(pts >= (n_max - cohortsize + 1)){break}
       }
-      print('cohort')
-      print(cohort)
+     
       #compute the decision 
       #a) total DLT at current dose
       total_cohort_DLT <- cohort %>% filter(Dose == current_dose) %>% filter(Group == 'C') %>% summarise(DLT = sum(DLT))
@@ -565,7 +563,6 @@ compute_BFBOIN_at <- function(cohort, doses_info, new_reference, cohortsize, n_m
       } 
     #possibility of backfilling
     if(backfill == T){
-      print('possibility for backfill')
   
       parms_resp <- doses_info %>% filter(Dose == current_dose) %>% select(shape = Shape_resp, scale = Scale_resp)
     
@@ -610,7 +607,8 @@ compute_BFBOIN_at <- function(cohort, doses_info, new_reference, cohortsize, n_m
     
     patient <- cohort %>% filter(Run == run) %>% filter(Group == 'C') %>% head(1) %>% select(dlt = DLT)
     if(patient$dlt == 1 && current_cohortsize == 1){
-      
+
+      run <- run + 1
       current_cohortsize <- cohortsize
       
       update <- cohort_patient(cohort, doses_info, current_dose, run, pts, previous_time = limit_time, last_arrival_time = last_arrival, last_lag = last_lag, i_simulation = i_simulation, cohortsize = current_cohortsize - 1)
