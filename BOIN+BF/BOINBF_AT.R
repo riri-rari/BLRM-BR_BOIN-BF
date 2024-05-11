@@ -873,7 +873,8 @@ true_pDLT <- c(0.05, 0.15, 0.3, 0.35, 0.4, 0.45)
 true_presp <- c(0.10, 0.2, 0.3, 0.35, 0.4, 0.45)
 
 # Scenario 10 (equal to scenario 2 but with different p_responses)
-true_pDLT <- c(0.12, 0.25doses <- seq(1, 6, 1)
+true_pDLT <- c(0.12, 0.25)
+doses <- seq(1, 6, 1)
 cohortsize <- 3
 n_cap <- 12
 n_stop <- 9
