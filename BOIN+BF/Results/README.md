@@ -1,7 +1,7 @@
 This folder contains the results of the simulations done with the BFBOIN.R and BFBOIN_at.R. 
 The scenario run are 
 
-# Scenario 0
+### Scenario 0
 true_pDLT <- c(0.40, 0.45, 0.50, 0.55, 0.60, 0.65)
 true_presp <- c(0.3, 0.4, 0.45, 0.5, 0.55, 0.6)
 
