@@ -77,6 +77,10 @@ n_cap <- 12
 
 n_stop <- 9
 
+#### Notes
+The legnth here is specified as the mean total duration adn it is not stopped at the last patietn arrival. 
+The 'Mean_SS' and 'Mean_SI' are percentages
+
 n_max <- 32
 
 DLT_time <- 1 #1 month
