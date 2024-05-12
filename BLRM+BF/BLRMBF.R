@@ -161,8 +161,9 @@ logposterior <- function(data, betas){
   likelihood <- sum(dbinom(data$DLT, data$Pts, p, log = T))
   #prior for the values of beta0 and log(beta1)
   prior <- dmvnorm(betas, mean = prior_mean, sigma = prior_var, log = T)
-  
-  return(sum(likelihood, prior))
+
+  #multiply for the jacobian (exp(beta[2])) to obtain the posterior in terms of beta0 and log(beta1). SInce log then it is beta2
+  return(sum(sum(likelihood, prior), betas[2]))
   
 }
 
@@ -240,7 +241,7 @@ MCMC <- function(cohort, doses_info, time_arrival, i_simulation, run, iterations
     #lambda tuning on the logscale
     lambda_proposed <- gamma*(min(exp(log_ratio), 1) - 0.24) + lambda_proposed
     #sigma varcov --> add a small value not to get stuck?
-    sigma_current <- sigma_current + gamma*((beta_parms[i, ] - mean_current)%*%t(beta_parms[i, ] - mean_current) - sigma_current )
+    sigma_current <- sigma_current + gamma*((beta_parms[i, ] - mean_current)%*%t(beta_parms[i, ] - mean_current) - sigma_current ) + 0.001
     #mean vector
     mean_current <- mean_current + gamma*(beta_parms[i, ] - mean_current)
     
