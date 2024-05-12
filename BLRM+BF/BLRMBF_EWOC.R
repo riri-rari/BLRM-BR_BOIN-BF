@@ -221,7 +221,7 @@ logposterior <- function(data, betas){
   likelihood <- sum(dbinom(data$DLT, data$Pts, p, log = T))
   prior <- dmvnorm(betas, mean = prior_mean, sigma = prior_var, log = T)
   
-  #the det(jacobian) is the exp(beta2) that multiplies the posterior. Since work in log then it is the beta2  
+  #the det(jacobian) is the exp(beta2) that multiplies the posterior so to obtain the posterior in beta0 and log(beta1). Since work in log then it is the beta2  
  
   return(sum(sum(likelihood, prior), betas[2]) )
   
@@ -285,6 +285,7 @@ MCMC <- function(cohort, doses_info, time_arrival, i_simulation = 0, run, iterat
   #run and collect the diagnostics: Geweke and acceptance rate 
   diagnostics <- c(round(n_accept/(iterations - 1), digits = 2) * 100, geweke.diag(as.mcmc(beta_parms[, 1]))$z,  geweke.diag(as.mcmc(beta_parms[, 2]))$z )
 
+  #derive the distribution of beta1 (beta1 = exp(log(beta1)))
   beta_parms[, 2] <- exp(beta_parms[, 2])
   #need for the parms and for the diagnostics
   return(list('betas' = beta_parms, 'diagnostics' = diagnostics))
@@ -371,9 +372,10 @@ MCMC_adaptive_EWOC <- function(cohort, doses_info, time_arrival, i_simulation = 
   #run and collect the diagnostics: Geweke and acceptance rate 
   diagnostics <- c(round(n_accept/(iterations - 1), digits = 2) * 100, geweke.diag(as.mcmc(beta_parms[, 1]))$z,  geweke.diag(as.mcmc(beta_parms[, 2]))$z )
 
- 
-  #need for the parms and for the diagnostics
+  #derive the distribution of beta1 (beta1 = exp(log(beta1)))
   beta_parms[, 2] <- exp(beta_parms[, 2])
+
+  #need for the parms and for the diagnostics
   return(list('betas' = beta_parms, 'diagnostics' = diagnostics))
   
 }
