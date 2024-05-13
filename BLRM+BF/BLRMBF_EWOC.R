@@ -381,7 +381,7 @@ MCMC_adaptive_EWOC <- function(cohort, doses_info, time_arrival, i_simulation = 
 }
 
 #MCMC_nimble
-#NOTE: reference_dose to a default of 2.51. MUST be changed at need
+#NOTE: reference_dose to a default of 2.51. MUST be changed at need. THis must be coherent with the reference_dose that we set outside. The reference dose id the ture MTD + 0.01
 MCMC_nimble <- function(cohort, doses_info, time_arrival, i_simulation = 0, run, iterations = 10000, burnin = 1000, delta = 0.01, reference_dose = 2.51){
   
   #set the seed according to the run and to the simulation number. Ok global variables  
