@@ -221,7 +221,9 @@ logposterior <- function(data, betas){
   likelihood <- sum(dbinom(data$DLT, data$Pts, p, log = T))
   prior <- dmvnorm(betas, mean = prior_mean, sigma = prior_var, log = T)
   
-  #the det(jacobian) is the exp(beta2) that multiplies the posterior so to obtain the posterior in beta0 and log(beta1). Since work in log then it is the beta2  
+  #As the lik is written in terms of beta0 and beta1 I need the version in beta0 and log(beta1).
+  #the det(jacobian) is the exp(beta2) that multiplies the posterior so to obtain the posterior in beta0 and log(beta1). 
+  #Since work in log then it is the beta2  
  
   return(sum(sum(likelihood, prior), betas[2]) )
   
