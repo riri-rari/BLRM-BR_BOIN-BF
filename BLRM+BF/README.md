@@ -71,7 +71,7 @@ The function takes in input the cohort dataset, the time of the current patient 
 
 ### maximum_open_EWOC()
 
-The maximum_open_EWOC() function is aimed at finding the optimal dose for the backfilling arm by the arrival of the next patient. The function firslty finds the highest dose open for backfill and then checks if by the arrival of the current patients (time_pts_backfill) the dose level is still okay or not. To make the decision, the cohort arm and the current backfill dose arm are checked for their posterior probability of having P(x >= 0.35) >= 0.75 by means of the check_individual_posterior() function. If both the arms are okay, then the current backfill dose is used for the current patient and returned. If either of the arms is not okay then the open_close_EWOC() function is called and the optimal dose for the backfill is found by measn of MCMC run. The doses_info dataset is then updated such that all the doses over the current backfill one are closed for backfilling and all those avilable for being open (not -1 and not 2, see Appendix()) are open. In this scenario the chosen backfill dose, the diagnostics, the probabilities info and the updated version of the doses_info dataset are returned. 
+The maximum_open_EWOC() function is aimed at finding the optimal dose for the backfilling arm by the arrival of the next patient. The function firslty finds the highest dose open for backfill and then checks if by the arrival of the current patients (time_pts_backfill) the dose level is still okay or not. To make the decision, the cohort arm and the current backfill dose arm are checked for their posterior probability of having P(x >= 0.35) >= 0.25 by means of the check_individual_posterior() function. If both the arms are okay, then the current backfill dose is used for the current patient and returned. If either of the arms is not okay then the open_close_EWOC() function is called and the optimal dose for the backfill is found by measn of MCMC run. The doses_info dataset is then updated such that all the doses over the current backfill one are closed for backfilling and all those avilable for being open (not -1 and not 2, see Appendix()) are open. In this scenario the chosen backfill dose, the diagnostics, the probabilities info and the updated version of the doses_info dataset are returned. 
 
 
 ### logposterior()
@@ -86,11 +86,8 @@ $(\beta_0, \log(\beta_1) ) \sim N((\log(0.5), 0), (4, 0, 0, 1))$ (ref BLRM+BF pa
 
 The function takes in input the data (data dataframe with summary information about the DLT and the PTs for each of the used doses) and the vector of betas that are sampled inside the MCMC loop (betas, see MCMC()). 
 
-The function returns the logposterior probability for the sampled parameters. 
-A problem that the function might incur onto is the generation of $\pi =$ NaN, that is due to the large value of $\exp(\beta_1)$ (Inf/Inf = NaN). 
-
 Assumptions used in the formula: 
-- independent obsrvations (ok different patients)
+- independent obsrvations (ok different patients) within same experiemtn (same conditions) --> so i can write Lik_2 * Lik_1 * prior to have the Posterior_2
 - exchangeability (no matter the order given the parameters beta) --> so i can use all info at once
 
 ### MCMC()
@@ -106,7 +103,7 @@ The function takes in input the cohort dataset (cohort), the dataset witht he do
 
 The MCMC_adaptvie_EWOC() function is aimed to compute the MCMC posterior densities estimates for the $\beta_0$ and $\log(\beta_1)$ parameters. It does so applying an adaptive Metropolis-Hastings algorithm. 
 
-Parameters: first $\lambda$ proposal is set to $log((2.38^2)/2)$ and the $\gamma$ is set to $\frac{1}{(1+i)^{\delta}}$, with $\delta = 0.01$. Accepetance rate = 0.24 in this way.
+Parameters: first $\lambda$ proposal is set to $log((2.38^2)/2)$ and the $\gamma$ is set to $\frac{1}{(1+i)^{\delta}}$, with $\delta = 0.01$. Accepetance rate = 0.24 in this way. However this approach has differences with the Nimble code (the non-adaptive version is far more simialr to the Imble one but it has lower than 24 ar).
 A small value is added to the updated version of Sigma to avoid being stuck anf following the idea in https://keichenseer.com/post/a-metropolis-algorithm-in-r-part-2-adaptive-proposals/
 
 References: https://journals.sagepub.com/doi/pdf/10.1177/1536867X1401400309#cite.AT08@-11, https://biodatascience.github.io/statcomp/advmcmc/advmcmc.html#24_Adaptive_Metropolis_Algorithm, https://keichenseer.com/post/a-metropolis-algorithm-in-r-part-2-adaptive-proposals/
@@ -122,7 +119,7 @@ The decision() function calls the MCMC() function to compute the updated \beta p
 ### evaluate_posterior()
 
 The evaluate_posterior() is a function that is aimed to compute the posterior probability ranges as described by Neun. It takes in input a vector of posterior distributions and gives in output the probability that maximizes the targeted toxicity range while controlling for the EWOC for the excessive or unacceptable toxicity ranges. 
-The function loops over all the computed a posteriori intervals and returns the probability index that maximizes it. It also checks if the potential probability is contolled for the EWOC (P(x >=0.35) > y, y = 0.75 currently): if the selected one is not okay with the toxicity check then the loop is entered again to find the second to maximum targeted interval. The loop ends either with a valid dose or with a NaN.  
+The function loops over all the computed a posteriori intervals and returns the probability index that maximizes it. It also checks if the potential probability is contolled for the EWOC (P(x >=0.35) > y, y = 0.25): if the selected one is not okay with the toxicity check then the loop is entered again to find the second to maximum targeted interval. The loop ends either with a valid dose or with a NaN.  
 The function takes in input a limit dose that can resize the vector of possible doses to be evaluated (applied with the backfilling).
 
 NOTE: the EWOC is defined to control the p(overtoxicity) to be less and equal to 25%.
