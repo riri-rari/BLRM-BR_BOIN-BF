@@ -103,10 +103,19 @@ The function takes in input the cohort dataset (cohort), the dataset witht he do
 
 The MCMC_adaptvie_EWOC() function is aimed to compute the MCMC posterior densities estimates for the $\beta_0$ and $\log(\beta_1)$ parameters. It does so applying an adaptive Metropolis-Hastings algorithm. 
 
-Parameters: first $\lambda$ proposal is set to $log((2.38^2)/2)$ and the $\gamma$ is set to $\frac{1}{(1+i)^{\delta}}$, with $\delta = 0.01$. Accepetance rate = 0.24 in this way. However this approach has differences with the Nimble code (the non-adaptive version is far more simialr to the Imble one but it has lower than 24 ar).
+Parameters: first $\lambda$ proposal is set to $log((2.38^2)/2)$ and the $\gamma$ is set to $\frac{1}{(1+i)^{\delta}}$, with $\delta = 0.01$. Accepetance rate = 0.24 in this way. However this approach has differences with the Nimble code (the non-adaptive version is far more simialr to the Imble one but it has lower than 24 ar). But most importantly the posterior distributons of the two parameters re too much equal one to the other. 
+Type of adaptation: AM algorithm with global adaptive scaling (Ref: https://link.springer.com/article/10.1007/s11222-008-9110-y)
 A small value is added to the updated version of Sigma to avoid being stuck anf following the idea in https://keichenseer.com/post/a-metropolis-algorithm-in-r-part-2-adaptive-proposals/
 
 References: https://journals.sagepub.com/doi/pdf/10.1177/1536867X1401400309#cite.AT08@-11, https://biodatascience.github.io/statcomp/advmcmc/advmcmc.html#24_Adaptive_Metropolis_Algorithm, https://keichenseer.com/post/a-metropolis-algorithm-in-r-part-2-adaptive-proposals/
+
+
+### MCMC_adaptive_EWOC()
+The MCMC_adaptvie_EWOC() function is aimed to compute the MCMC posterior densities estimates for the $\beta_0$ and $\log(\beta_1)$ parameters. It does so applying an adaptive Metropolis-Hastings algorithm. 
+Parameters: first $\lambda$ proposal is set to $log((2.38^2)/2)$ and the $\gamma$ is set to $\frac{1}{(1+i)^{\delta}}$, with $\delta = 0.01$. Accepetance rate = 0.24 in this way. Better similarity with Nimble ut most importantly the two distributons are not the same moved on the x-axis. 
+Type of adaptive algorithm: Componentwise AM with componentwise adaptive scaling (Ref: https://link.springer.com/article/10.1007/s11222-008-9110-y)
+A small value is added to the updated version of Sigma to avoid being stuck anf following the idea in https://keichenseer.com/post/a-metropolis-algorithm-in-r-part-2-adaptive-proposals/
+
 
 ### MCMC_nimble()
 
