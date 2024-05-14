@@ -229,7 +229,7 @@ logposterior <- function(data, betas){
   
 }
 
-#MCMC --> more similar to Nimble but not good ar
+#MCMC --> more similar to Nimble but not good a.r. (tried on i_simualtion = 1, scenario 3 with rference dose 3.51)
 MCMC <- function(cohort, doses_info, time_arrival, i_simulation = 0, run, iterations = 10000, burnin = 1000){
   
   #set the seed according to the run and to the simulation number. Ok global variables  
@@ -294,7 +294,8 @@ MCMC <- function(cohort, doses_info, time_arrival, i_simulation = 0, run, iterat
   
 }
 
-#MCMC_adaptive_EWOC --> might be problems with this as the plots are fairly different wrt Nimble ones. 
+#MCMC_adaptive_EWOC --> might be problems with this as the plots are fairly different wrt Nimble ones. But the major concern is that the plots for beta0 (betas[, 1] or beta_parms[, 1]) and for log(beta1) (betas[, 2] or beta_parms[, 2])
+#are always the same distribution just moved in the x-axis
 
 MCMC_adaptive_EWOC <- function(cohort, doses_info, time_arrival, i_simulation = 0, run, iterations = 10000, burnin = 1000, delta = 0.01){
   
@@ -381,6 +382,100 @@ MCMC_adaptive_EWOC <- function(cohort, doses_info, time_arrival, i_simulation = 
   return(list('betas' = beta_parms, 'diagnostics' = diagnostics))
   
 }
+
+
+#try with another way of adaptive design, with adaptattion of one parm per time and not both togheter. Better plots, still not eqaul to Nibmle. A.R. good at 24
+MCMC_adaptive_EWOC3 <- function(cohort, doses_info, time_arrival, i_simulation = 0, run, iterations = 10000, burnin = 1000, delta = 0.01){
+  
+  #set the seed according to the run and to the simulation number. Ok global variables  
+  set.seed((1234 + run + i_simulation))
+  
+
+  #take the values in a summary format
+  dlt <- cohort %>% filter(Limit_time <= time_arrival) %>% filter(!is.na(Dose)) %>% group_by(Dose) %>% summarise(freq = sum(DLT))
+  pts <- cohort %>% filter(Limit_time <= time_arrival) %>% filter(!is.na(Dose)) %>% group_by(Dose) %>% summarise(pts = n())
+  doses <- dlt$Dose #select the appropriate doses
+  
+  data <- data.frame('DLT' = dlt$freq, 'Pts' = pts$pts, 'Doses' = dlt$Dose )
+  print(data)
+  
+  beta0_start <- 1
+  beta1_start <- 1
+  
+  #parameters 
+  n_accept <- 0
+  beta_parms <- matrix(nrow = iterations, ncol = 2)
+  colnames(beta_parms) <- c('beta0', 'beta1')
+  beta_parms[1, ] <- c(beta0_start, beta1_start)
+  
+  #define the sd factor for the acceptance rate according to Andrieu and Thoms 
+  lambdas <- c(log(2.38^2/2), log(2.38^2/2))
+
+  #initialise the mean current 
+  mean_current <- beta_parms[1, ]
+  sigma_current <- matrix(c(1, 0, 0, 1), nrow = 2, ncol = 2)
+  
+  for( i in 0:(iterations-2) ){
+  
+    #sample the component 
+    k <- runif(1, min = 0, max = 1)
+    k <- ifelse(k <= 0.5, 1, 2) #just two components 
+    if(k == 1){ e <- c(1, 0)}else{ e <- c(0, 1)} #vector e 
+    
+    
+    beta_proposal <-  beta_parms[(i - 1 + 2), ] + e*rmvnorm(n = 1, mean = c(0, 0), sigma = diag(rep((exp(lambdas[k]))*sigma_current[k, k], 2))) #sampling of beta0 and log(beta1)
+     
+    log_now <- logposterior_n(data, beta_proposal)
+    log_previous <- logposterior_n(data, beta_parms[(i - 1 + 2), ])
+    log_ratio <- log_now - log_previous
+
+    #just to be sure it is not entered
+    if(is.na(log_ratio)){
+      
+      print('change')
+      beta_parms[(i + 2), ] <- beta_parms[(i-1 + 2), ]
+      
+      #go to the next iteration
+      next
+      
+    }
+    
+    u <- runif(1, min = 0, max = 1)
+    if(log_ratio >= 0 || u <= exp(log_ratio)){
+      beta_parms[(i + 2), ] <- beta_proposal
+      n_accept <- n_accept + 1
+    } else {
+      beta_parms[(i + 2), ] <- beta_parms[(i - 1 + 2), ]
+    }
+    
+    #updating 
+    
+    #weights
+    gamma <- 1/(1 + (i))^delta  #1/(1 + (i - 1))
+  
+    #acceptance rate optimal for 2dim (if for 1dim as suggetsed in the paper then i have 44% A.R.)
+    lambdas[k] <- gamma*(min(exp(log_ratio), 1) - 0.24) + lambdas[k]
+  
+    sigma_current <- sigma_current + gamma*((beta_parms[(i + 2), ] - mean_current)%*%t(beta_parms[(i + 2), ] - mean_current) - sigma_current ) + 0.001 #can i add a small quantity here?
+    
+    mean_current <- mean_current + gamma*(beta_parms[(i + 2), ] - mean_current)
+    
+  }
+  
+  #trim the dataset for the burnin 
+  beta_parms <- beta_parms[-c(1:burnin), ]
+  
+  #run and collect the diagnostics: Geweke and acceptance rate 
+  diagnostics <- c(round(n_accept/(iterations - 1), digits = 2) * 100, geweke.diag(as.mcmc(beta_parms[, 1]))$z,  geweke.diag(as.mcmc(beta_parms[, 2]))$z )
+
+  #retrieve the distributon of beta1 = exp(log(beta1))
+  beta_parms[, 2] <- exp(beta_parms[, 2])
+
+  #need for the parms and for the diagnostics
+  return(list('betas' = beta_parms, 'diagnostics' = diagnostics))
+  
+}
+
 
 #MCMC_nimble
 #NOTE: reference_dose to a default of 2.51. MUST be changed at need. THis must be coherent with the reference_dose that we set outside. The reference dose id the ture MTD + 0.01
@@ -864,8 +959,8 @@ true_pDLT <- c(0.12, 0.25, 0.42, 0.49, 0.55, 0.62)
 true_presp <- c(0.2, 0.3, 0.4, 0.5, 0.6, 0.7)
 # Scenario 3
 reference_dose <- 3.51
-true_pDLT <- c(0.04, 0.12, 0.25, 0.43, 0.63, 0.75)
-true_presp <- c(0.1, 0.2, 0.3, 0.45, 0.58, 0.67)
+true_pDLT <- c(0.1, 0.2, 0.3, 0.4, 0.5, 0.6)
+true_presp <- c(0.001, 0.002, 0.003, 0.0045, 0.0058, 0.0067)
 # Scenario 4 
 reference_dose <- 4.51
 true_pDLT <- c(0.02, 0.06, 0.1, 0.25, 0.4, 0.5)
