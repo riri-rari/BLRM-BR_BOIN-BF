@@ -310,7 +310,7 @@ MCMC_adaptive_EWOC <- function(cohort, doses_info, time_arrival, i_simulation = 
   data <- data.frame('DLT' = dlt$freq, 'Pts' = pts$pts, 'Doses' = dlt$Dose )
   print(data)
 
-  mean_current <- c(0, 0)
+  mean_current <- c(1, 1)
   beta0_start <- 1 
   beta1_start <- 1
   sigma_current <- matrix(c(1, 0, 0, 1), nrow = 2, ncol = 2)
