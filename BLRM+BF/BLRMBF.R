@@ -187,7 +187,7 @@ MCMC <- function(cohort, doses_info, time_arrival, i_simulation, run, iterations
   data <- data.frame('DLT' = dlt$freq, 'Pts' = pts$pts, 'Doses' = doses$dose )
   
   #print(c('data', data))
-  mean_current <- c(0, 1)
+  mean_current <- c(0, 0)
   beta0_start <- 1
   beta1_start <- 0
   sigma_start <- matrix(c(1, 0, 0, 1), nrow = 2, ncol = 2)
@@ -207,7 +207,7 @@ MCMC <- function(cohort, doses_info, time_arrival, i_simulation, run, iterations
   
   for( i in 2:iterations){
   
-    beta_proposal <- rmvnorm(n = 1, mean = mean_current, sigma = exp(lambda_proposed)*sigma_current) #sampling of beta0 and log(beta1)
+    beta_proposal <- beta_parms[(i - 1 + 2)] + rmvnorm(n = 1, mean = c(0, 0), sigma = exp(lambda_proposed)*sigma_current) #sampling of beta0 and log(beta1)
      
     log_now <- logposterior(data, beta_proposal)
     log_previous <- logposterior(data, beta_parms[(i - 1), ])
