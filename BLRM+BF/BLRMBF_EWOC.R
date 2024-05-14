@@ -229,7 +229,7 @@ logposterior <- function(data, betas){
   
 }
 
-#MCMC
+#MCMC --> more similar to Nimble but not good ar
 MCMC <- function(cohort, doses_info, time_arrival, i_simulation = 0, run, iterations = 10000, burnin = 1000){
   
   #set the seed according to the run and to the simulation number. Ok global variables  
@@ -259,7 +259,7 @@ MCMC <- function(cohort, doses_info, time_arrival, i_simulation = 0, run, iterat
   
  for( i in 2:iterations){
   
-    beta_proposal <- rmvnorm(n = 1, mean = c(1, 0), sigma = (sd^2)*sigma_start) #sampling of beta0 and log(beta1)
+    beta_proposal <- beta_proposal[(i-1), ] + rmvnorm(n = 1, mean = c(0, 0), sigma = (sd^2)*sigma_start) #sampling of beta0 and log(beta1)
      
     log_now <- logposterior(data, beta_proposal)
     log_previous <- logposterior(data, beta_parms[(i - 1), ])
@@ -294,7 +294,7 @@ MCMC <- function(cohort, doses_info, time_arrival, i_simulation = 0, run, iterat
   
 }
 
-#MCMC_adaptive_EWOC
+#MCMC_adaptive_EWOC --> might be problems with this as the plots are fairly different wrt Nimble ones. 
 
 MCMC_adaptive_EWOC <- function(cohort, doses_info, time_arrival, i_simulation = 0, run, iterations = 10000, burnin = 1000, delta = 0.01){
   
@@ -310,7 +310,7 @@ MCMC_adaptive_EWOC <- function(cohort, doses_info, time_arrival, i_simulation = 
   data <- data.frame('DLT' = dlt$freq, 'Pts' = pts$pts, 'Doses' = dlt$Dose )
   print(data)
 
-  mean_current <- c(1, 1)
+  mean_current <- c(0, 0)
   beta0_start <- 1 
   beta1_start <- 1
   sigma_current <- matrix(c(1, 0, 0, 1), nrow = 2, ncol = 2)
@@ -328,7 +328,7 @@ MCMC_adaptive_EWOC <- function(cohort, doses_info, time_arrival, i_simulation = 
   
   for( i in 0:(iterations-2) ){
     
-    beta_proposal <- rmvnorm(n = 1, mean = mean_current, sigma = exp(lambda_proposed)*sigma_current) #sampling of beta0 and log(beta1)
+    beta_proposal <- beta_proposal[(i-1+2), ] + rmvnorm(n = 1, mean = c(0, 0), sigma = exp(lambda_proposed)*sigma_current) #sampling of beta0 and log(beta1)
      
     log_now <- logposterior(data, beta_proposal)
     log_previous <- logposterior(data, beta_parms[(i - 1 + 2), ])
