@@ -229,7 +229,7 @@ logposterior <- function(data, betas){
   
 }
 
-#MCMC --> more similar to Nimble but not good a.r. (tried on i_simualtion = 1, scenario 3 with rference dose 3.51)
+#MCMC --> more similar to Nimble but not good a.r. (tried on i_simualtion = 1, scenario 3 with rference dose 3.51). Plots are in the Plots.pdf in ths repo
 MCMC <- function(cohort, doses_info, time_arrival, i_simulation = 0, run, iterations = 10000, burnin = 1000){
   
   #set the seed according to the run and to the simulation number. Ok global variables  
