@@ -113,7 +113,8 @@ A small value is added to the updated version of Sigma to avoid being stuck anf 
 References: https://journals.sagepub.com/doi/pdf/10.1177/1536867X1401400309#cite.AT08@-11, https://biodatascience.github.io/statcomp/advmcmc/advmcmc.html#24_Adaptive_Metropolis_Algorithm, https://keichenseer.com/post/a-metropolis-algorithm-in-r-part-2-adaptive-proposals/
 
 
-### MCMC_adaptive_EWOC()
+### MCMC_adaptive_EWOC3()
+
 The MCMC_adaptvie_EWOC() function is aimed to compute the MCMC posterior densities estimates for the $\beta_0$ and $\log(\beta_1)$ parameters. It does so applying an adaptive Metropolis-Hastings algorithm. 
 
 Parameters: first $\lambda$ proposal is set to $log((2.38^2)/2)$ and the $\gamma$ is set to $\frac{1}{(1+i)^{\delta}}$, with $\delta = 0.01$.
