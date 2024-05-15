@@ -384,7 +384,7 @@ MCMC_adaptive_EWOC <- function(cohort, doses_info, time_arrival, i_simulation = 
 }
 
 
-#try with another way of adaptive design, with adaptattion of one parm per time and not both togheter. Better plots, still not eqaul to Nibmle. A.R. good at 24
+#try with another way of adaptive design, with adaptattion of one parm per time and not both togheter. Better plots, still not eqaul to Nibmle. A.R. good at 24 but i should put 0.44 for the single_dim ac so then i have 44 ac overall: good? 
 MCMC_adaptive_EWOC3 <- function(cohort, doses_info, time_arrival, i_simulation = 0, run, iterations = 10000, burnin = 1000, delta = 0.01){
   
   #set the seed according to the run and to the simulation number. Ok global variables  
