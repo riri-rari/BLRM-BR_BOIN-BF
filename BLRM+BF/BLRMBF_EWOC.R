@@ -454,7 +454,7 @@ MCMC_adaptive_EWOC3 <- function(cohort, doses_info, time_arrival, i_simulation =
     #weights
     gamma <- 1/(1 + (i))^delta  #1/(1 + (i - 1))
   
-    #acceptance rate optimal for 2dim (if for 1dim as suggetsed in the paper then i have 44% A.R.)
+    #acceptance rate optimal for 2dim (if for 1dim as suggetsed in the paer then it should be - 0.44)
     lambdas[k] <- gamma*(min(exp(log_ratio), 1) - 0.24) + lambdas[k]
   
     sigma_current <- sigma_current + gamma*((beta_parms[(i + 2), ] - mean_current)%*%t(beta_parms[(i + 2), ] - mean_current) - sigma_current ) + 0.001 #can i add a small quantity here?
