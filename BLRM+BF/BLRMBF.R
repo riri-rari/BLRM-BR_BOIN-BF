@@ -4,6 +4,9 @@ library(BOIN)
 library(mvtnorm)
 library(coda)
 -----------------------------------------------------------------------------------------------------
+
+set.seed(1234)
+
 ## weibull_parms()
 
 weibull_parms <- function(pDLT, DLT_time){
@@ -16,11 +19,8 @@ weibull_parms <- function(pDLT, DLT_time){
 
 ## cohort_patient()
 
-cohort_patient <- function(cohort, doses_info, current_dose, run, pts, previous_time, last_arrival_time = 0, last_lag = 0, i_simulation = 0){
+cohort_patient <- function(cohort, doses_info, current_dose, run, pts, previous_time, last_arrival_time = 0, last_lag = 0){
   
-  
-  seed <- 1234 + run #+ i_simulation
-  set.seed(seed)
   
   #take the parms for the weibull DLT according to the current_dose
   parms_DLT <- doses_info %>% filter(Dose == current_dose) %>% select(shape = Shape_DLT, scale = Scale_DLT)
@@ -47,17 +47,15 @@ cohort_patient <- function(cohort, doses_info, current_dose, run, pts, previous_
     
   }
   
-  
-  return(list('cohort' = cohort, 'pts' = pts, 'previous_time' = previous_time, 'limit_time' = limit_time))
+  output_list <- list('cohort' = cohort, 'pts' = pts, 'previous_time' = previous_time, 'limit_time' = limit_time)
+  return(output_list)
   
 }
 
 ## backfill_patients()
 
-backfill_patients <- function(cohort, run, pts, previous_time, limit_time, n_max, i_simulation = 0){
+backfill_patients <- function(cohort, run, pts, previous_time, limit_time, n_max){
     
-    seed <- 555 + run + i_simulation
-    set.seed(seed)
     #generate potentially untill full of pts 
     while(pts < n_max){
       lag_arrival <- round(rexp(1, rate = lambda), 4)
@@ -71,8 +69,8 @@ backfill_patients <- function(cohort, run, pts, previous_time, limit_time, n_max
         
     }
 
-  
-  return(list('cohort' = cohort, 'pts' = pts, 'previous_time' = previous_time, 'last_arrival' = time_arrival_backfill, 'last_lag' = lag_arrival))
+  output_list <- list('cohort' = cohort, 'pts' = pts, 'previous_time' = previous_time, 'last_arrival' = time_arrival_backfill, 'last_lag' = lag_arrival)
+  return(output_list)
 }
 
 ## decision_overtoxicity()
@@ -158,22 +156,20 @@ logposterior <- function(data, betas){
   logit_p <- betas[1] + exp(betas[2])*log(data$Doses/reference_dose)
   p <- 1/(1 + exp(-logit_p)) 
 
-  likelihood <- sum(dbinom(data$DLT, data$Pts, p, log = T))
+  log_likelihood <- sum(dbinom(data$DLT, data$Pts, p, log = T))
   #prior for the values of beta0 and log(beta1)
-  prior <- dmvnorm(betas, mean = prior_mean, sigma = prior_var, log = T)
+  log_prior <- dmvnorm(betas, mean = prior_mean, sigma = prior_var, log = T)
 
   #multiply for the jacobian (exp(beta[2])) to obtain the posterior in terms of beta0 and log(beta1). SInce log then it is beta2
-  return(sum(sum(likelihood, prior), betas[2]))
+  log_posterior <- sum(sum(likelihood, prior), betas[2])
+  return(los_posterior)
   
 }
 
 ## MCMC()
 
-MCMC <- function(cohort, doses_info, time_arrival, i_simulation, run, iterations = 10000, burnin = 1000){
+MCMC <- function(cohort, doses_info, time_arrival, run, iterations = 10000, burnin = 1000){
   
-  #set the seed according to the run and to the simulation number. Ok global variables  
-  #set.seed((1234 + run + i_simulation))
-  set.seed(1234 + run)
   
   #define the sd factor for the acceptance rate
   sd <- 2.3
@@ -255,16 +251,17 @@ MCMC <- function(cohort, doses_info, time_arrival, i_simulation, run, iterations
 
   #transform the beta1 direclty 
   beta_parms[, 2] <- exp(beta_parms[, 2])
-  
-  return(list('betas' = beta_parms, 'diagnostics' = diagnostics))
+
+  output_list <- list('betas' = beta_parms, 'diagnostics' = diagnostics)
+  return(output_list)
   
 }
  
 ## decision()
-decision <- function(cohort, doses_info, time_arrival = 1000, run, target = 0.3, i_simulation = 0){
+decision <- function(cohort, doses_info, time_arrival = 1000, run, target = 0.3){
   
   #directly call the MCMC
-  results <- MCMC(cohort, doses_info, time_arrival, i_simulation = i_simulation, run = run)
+  results <- MCMC(cohort, doses_info, time_arrival, run = run)
   prob <- data.frame(matrix(ncol = length(doses_info$Dose), nrow = 9000))
   
   #compute the probabilities (exp the beta_1 as you have samples of log(beta_1))
@@ -278,7 +275,8 @@ decision <- function(cohort, doses_info, time_arrival = 1000, run, target = 0.3,
   print(c('distances', distances))
   choice <- doses_info$Dose[which(distances == min(distances))]
   #return the lowest in case you have double choice 
-  return(list('choice' = choice[1], 'diagnostics' = results$diagnostics))
+  output_list <- list('choice' = choice[1], 'diagnostics' = results$diagnostics)
+  return(output_list)
   
 }
 
@@ -353,7 +351,7 @@ transform_data_doses <- function(doses_info){
 
 ## compute_BRBLRM()
 
-compute_BFBLRM <- function(cohort, doses_info, cohortsize, n_max, n_cap, n_stop, DLT_time, lambda, target = 0.3 ,i_simulation = 0){
+compute_BFBLRM <- function(cohort, doses_info, cohortsize, n_max, n_cap, n_stop, DLT_time, lambda, target = 0.3){
   
   run <- 0 
   pts <- 0
@@ -392,7 +390,7 @@ compute_BFBLRM <- function(cohort, doses_info, cohortsize, n_max, n_cap, n_stop,
    
     #compute the decision and save the diagnostics 
     print('call decision')
-    results <- decision(cohort, doses_info, target = target, run = run, i_simulation = i_simulation)
+    results <- decision(cohort, doses_info, target = target, run = run)
     diagnostics <- rbind(diagnostics, results$diagnostics)
     print(c('diagn',diagnostics))
     print(c('choice', results$choice))
@@ -490,18 +488,18 @@ compute_BFBLRM <- function(cohort, doses_info, cohortsize, n_max, n_cap, n_stop,
     #how to check if the backfill dose is still ok? we have the n_cap for the state 2 and the response for the state 1 but for closing the dose you have the state 0: what if we close a dose for overtoxicity but then we suspend only the backfill adn not the main cohort? then you'd use the values of the pts in the backfill for the final decision but you do not expose more people thna needed at the eventually bad situation --> but this would be based on the hard safety rule + i would do this for each of the pts in the backfill but for the pts in the cohort i'd stay with blocks of 3 --> either you close a dose for pts or for overtoxicity that you see at that moment but not for the de-escalation (that is based on the regression and here you do not have boundaries)
     discarded <- 0
     for (back_pts in temp_pts){
-      print('backfill on')
+      #print('backfill on')
       #actual time of arrival to be considered to check if the current dose for backfill is stll okay 
       time_pts_backfill <- cohort %>% filter(Pts == back_pts) %>% select(time = Time_arrival)
       update_backfill <- maximum_open(cohort, time_pts_backfill$time, current_dose, doses_info, target = target)
       current_maximum_backfill_dose <- update_backfill$current_backfill_dose
       doses_info <- transform_data_doses(update_backfill$doses_info)
-      print(c('new patient at dose', current_maximum_backfill_dose))
-      print(c('line 867', doses_info$State))
+      #print(c('new patient at dose', current_maximum_backfill_dose))
+      #print(c('line 867', doses_info$State))
       
       #no backfill doses is open by arrival of the pts? then we discard the patient 
       if (is.na(current_maximum_backfill_dose)){
-        print('No current_maximum')
+        #print('No current_maximum')
         discarded <- discarded + 1 
         next
       }
@@ -535,31 +533,31 @@ compute_BFBLRM <- function(cohort, doses_info, cohortsize, n_max, n_cap, n_stop,
     #update the number of involved patients
     pts <- pts - discarded
     #check the number of patients
-    print(c('line 906', pts))
+    #print(c('line 906', pts))
     if(pts >= (n_max - cohortsize + 1)){break}
     
     #after having assigned all the new pts we can take the decision for the next cohort --> based on all the data up to now (by the rrival of the new pts)
-     print('call decision')
-    results <- decision(cohort, doses_info, time_arrival = last_arrival, target = target,  run = run, i_simulation = i_simulation)
+    #print('call decision')
+    results <- decision(cohort, doses_info, time_arrival = last_arrival, target = target,  run = run)
     diagnostics <- rbind(diagnostics, results$diagnostics)
-    print(c('backfill diagn', diagnostics))
+    #print(c('backfill diagn', diagnostics))
     next_dose <- results$choice
-    print(c('backfill next dose', next_dose, 'current_dose', current_dose))
+    #print(c('backfill next dose', next_dose, 'current_dose', current_dose))
     #check if the next_dose is ok with the K-fold skipping Dose rule
     next_dose <- k_fold_skipping(current_dose, next_dose, doses)
     
     
     #check the hard safety for all the doses and eliminate all those that are over the limit_dose (including this)
     limit_dose <- hard_safety(cohort, target = target) #this dose must be removed
-    print(c('backfill limit dose', limit_dose))
+    #print(c('backfill limit dose', limit_dose))
     if (!is.na(limit_dose)){
-      print('removal')
+      #print('removal')
       doses_info <- doses_info[-c(which(doses == limit_dose):nrow(doses_info)), ]
       doses <- doses_info$Dose 
      
         #check if the limit dose is not the minimum dose (apply the same limit of the BOIN alias 95%. This is different from the paper BLRM)
       if (limit_dose == min(doses)){
-        print('Stop the trial')
+        #print('Stop the trial')
         n_early_stop <- n_early_stop + 1
         break
       }
@@ -568,13 +566,13 @@ compute_BFBLRM <- function(cohort, doses_info, cohortsize, n_max, n_cap, n_stop,
     
     #check if the next_dose is still there available
     next_dose <- ifelse(next_dose <= doses_info$Dose[nrow(doses_info)], next_dose, doses_info$Dose[nrow(doses_info)])
-    print(c('next dose check', next_dose))
+    #print(c('next dose check', next_dose))
     
     #check for SUfficient information (same as 3cohorts + 'STAY')
     if (next_dose == current_dose){
       Pts <- cohort %>% filter(Dose == current_dose) %>% summarise(pts = n())
       if(Pts$pts == n_stop){
-        print('Maximum find')
+        #print('Maximum find')
         n_stop_reached <- n_stop_reached + 1
         break
       }
@@ -586,7 +584,7 @@ compute_BFBLRM <- function(cohort, doses_info, cohortsize, n_max, n_cap, n_stop,
     
     #check for opening of previous not-responsive in case the current dose has not been eliminated 
     if(current_dose <= doses_info$Dose[nrow(doses_info)]){
-      print('ok try opening')
+     # print('ok try opening')
       index <- which(doses_info$Dose == current_dose)
       if (doses_info[index, ]$State == -1){
         parms_resp <- doses_info %>% filter(Dose == current_dose) %>% select(shape = Shape_resp, scale = Scale_resp)
@@ -607,16 +605,16 @@ compute_BFBLRM <- function(cohort, doses_info, cohortsize, n_max, n_cap, n_stop,
     
   #open the doses of backfill for safety (all those that are < next_dose and are not -1 or 2) and close all those for not-safety
     for (dose_state in 1:nrow(doses_info)){
-      print(c('current dose state', doses_info[dose_state, ]$State, 'at dose', dose_state))
+      #print(c('current dose state', doses_info[dose_state, ]$State, 'at dose', dose_state))
       if (doses_info[dose_state, ]$Dose <= next_dose){
         if (doses_info[dose_state, ]$State == 0){
-          print('open')
+         # print('open')
           doses_info[dose_state, ]$State <- 1
           #since we are ok with safety up to the MTD (we need to check for the number of pts? No since already checked within the backfill loop)
         }
       } else{
           if (doses_info[dose_state, ]$State == 1){
-            print('close')
+           # print('close')
             doses_info[dose_state, ]$State <- 0 #for safety
           }
       }
@@ -628,13 +626,13 @@ compute_BFBLRM <- function(cohort, doses_info, cohortsize, n_max, n_cap, n_stop,
   current_dose <- next_dose
 
 }
-  
-  return(list('cohort' = cohort, 'diagnostics' = diagnostics))
+  output_list <- list('cohort' = cohort, 'diagnostics' = diagnostics)
+  return(output_list)
 }
 
 ## BFBLRM()
 
-BFBLRM <- function(doses, true_pDLT, true_presp, cohortsize,  n_max, n_cap, n_stop, DLT_time, lambda, target = 0.3, i_simulation = 0){
+BFBLRM <- function(doses, true_pDLT, true_presp, cohortsize,  n_max, n_cap, n_stop, DLT_time, lambda, target = 0.3){
   
   #compute the parms for each of the true_pDLT
   doses_info <- data.frame('Dose' = doses, 'Prob_DLT' = true_pDLT, 'Shape_DLT' = rep(NA, length(doses)), 'Scale_DLT' = rep(NA, length(doses)), 'Prob_resp' = true_presp, 'Shape_resp' = rep(NA, length(doses)), 'Scale_resp' = rep(NA, length(doses)))
@@ -655,7 +653,7 @@ BFBLRM <- function(doses, true_pDLT, true_presp, cohortsize,  n_max, n_cap, n_st
 
   cohort <- data.frame('Run' = as.numeric(rep(NA, n_max)), 'Pts' = as.numeric(rep(NA, n_max)), 'Group' = rep(NA, n_max), 'Dose'= as.numeric(rep(NA, n_max)), 'Time_arrival' = as.numeric(rep(-1, n_max)), 'Time_DLT' = as.numeric(rep(-1, n_max)), 'DLT' = as.numeric(rep(-1, n_max)), 'Lag' = as.numeric(rep(-1, n_max)), 'Limit_time' = as.numeric(rep(-1, n_max)), 'Sum_times' = as.numeric(rep(-1, n_max)))
 
-  results <- compute_BFBLRM(cohort, doses_info, cohortsize, n_max, n_cap, n_stop, DLT_time, lambda, target = target, i_simulation = i_simulation)
+  results <- compute_BFBLRM(cohort, doses_info, cohortsize, n_max, n_cap, n_stop, DLT_time, lambda, target = target)
 
 
   return(results)
