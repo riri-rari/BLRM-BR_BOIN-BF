@@ -14,12 +14,14 @@ weibull_parms <- function(pDLT, DLT_time){
   #x1 = 0.5*(DLT_time) x2 = DLT_time
   shape <- (log(-log(1 - pDLT)) - log(-log(1 - 0.5*pDLT)))/(log(DLT_time) - log(0.5*DLT_time) )
   scale <- (0.5*DLT_time)/((-log(1 - 0.5*pDLT))^(1/shape))
-  
-  return(c(shape, scale))
+  outvec <- c(shape, scale)  # Define output vector outside return function
+  return(outvec)
 }
 
 #cohort_patient()
-cohort_patient <- function(cohort, doses_info, current_dose, run, pts, previous_time, last_arrival_time = 0, last_lag = 0, i_simulation = 0){
+cohort_patient <- function(cohort, doses_info, current_dose, run, pts, 
+                           previous_time, last_arrival_time = 0, last_lag = 0,
+                           i_simulation = 0){
   
   
   seed <- 1234 + run + i_simulation
@@ -50,15 +52,22 @@ cohort_patient <- function(cohort, doses_info, current_dose, run, pts, previous_
     
   }
   
+  output_list <- list('cohort' = cohort, 
+                      'pts' = pts, 
+                      'previous_time' = previous_time, 
+                      'limit_time' = limit_time) # Define output list outside return function
   
-  return(list('cohort' = cohort, 'pts' = pts, 'previous_time' = previous_time, 'limit_time' = limit_time))
+  return(output_list)
   
 }
 
 #backfill_patients()
 backfill_patients <- function(cohort, run, pts, previous_time, limit_time, n_max, i_simulation = 0){
     
-    seed <- 555 + run + i_simulation
+    seed <- 555 + run + i_simulation 
+    #! Why do you set a seed within a function? The seed should ideally be a single
+    #! number e.g. set.seed(1234) at the beginning of your code where you run your
+    #! simulations.
     set.seed(seed)
     #generate potentially untill full of pts 
     while(pts < n_max){
@@ -70,11 +79,13 @@ backfill_patients <- function(cohort, run, pts, previous_time, limit_time, n_max
       cohort[pts, ] <- c(run, pts, 'B', NA, time_arrival_backfill, NA, NA, lag_arrival, NA, NA)
       previous_time <- time_arrival_backfill 
       #previous_time keeps track of the last point in the time line for the backfill --> can be not returned. Not necessary for next cohort and next backfill
-        
     }
-
-  
-  return(list('cohort' = cohort, 'pts' = pts, 'previous_time' = previous_time, 'last_arrival' = time_arrival_backfill, 'last_lag' = lag_arrival))
+  output_list <- list('cohort' = cohort, 
+                      'pts' = pts, 
+                      'previous_time' = previous_time,
+                      'last_arrival' = time_arrival_backfill,
+                      'last_lag' = lag_arrival) # Define output list outside return function
+  return(output_list)
 }
 
 #chack_individual_posterior
@@ -95,14 +106,18 @@ check_individual_posterior <- function(pts, fail, dose, info_probs){
 
 #open_close_EWOC
 
-open_close_EWOC <- function(cohort, doses_info, current_dose, time_arrival = 1000, run, target = 0.3, i_simulation = 0){
+open_close_EWOC <- function(cohort, doses_info, current_dose, 
+                            time_arrival = 1000, run, target = 0.3, 
+                            i_simulation = 0){
   
   info_probs <- data.frame('Dose' = doses_info$Dose, 'alpha' = rep(NA, nrow(doses_info), 'beta' = rep(NA, nrow(doses_info))))
   
   prob <- data.frame(matrix(ncol = length(doses_info$Dose), nrow = 9000)) #nrow = iterations - burnin
   
   #directly call the MCMC
-  results <- MCMC_adaptive_EWOC(cohort, doses_info, time_arrival, i_simulation = i_simulation, run = run) #iterations = 10000, burnin = 1000
+  results <- MCMC_adaptive_EWOC(cohort, doses_info, time_arrival, 
+                                i_simulation = i_simulation, 
+                                run = run) #iterations = 10000, burnin = 1000
   #results_nimble <- MCMC_nimble(cohort, doses_info, time_arrival, i_simulation = i_simulation, run = run)
   
   #compare with Nimble results 
@@ -126,14 +141,19 @@ open_close_EWOC <- function(cohort, doses_info, current_dose, time_arrival = 100
   max_prob <- evaluate_posterior(prob, limit_dose = index_current_dose)
   #print(c('index', max_prob))
   choice <- ifelse(is.na(max_prob), NA, doses_info$Dose[max_prob])
+  
+  output_list <- list('choice' = choice,
+                      'diagnostics' = results$diagnostics,
+                      'info_probs' = info_probs) # Define output list outside return function
  
-  return(list('choice' = choice, 'diagnostics' = results$diagnostics, 'info_probs' = info_probs))
+  return(output_list) 
   
 }
 
 #maximum_open_EWOC()
 
-maximum_open_EWOC <- function(cohort, time_pts_backfill, current_dose, doses_info, info_probs, run, last_time){
+maximum_open_EWOC <- function(cohort, time_pts_backfill, current_dose, 
+                              doses_info, info_probs, run, last_time){
   
   current_backfill_dose <- doses_info %>% filter(State == 1)  %>% filter(Dose < current_dose) %>% arrange(Dose) %>% tail(1)
   current_backfill_dose <- current_backfill_dose$Dose
@@ -142,7 +162,8 @@ maximum_open_EWOC <- function(cohort, time_pts_backfill, current_dose, doses_inf
   if (identical(current_backfill_dose, numeric(0))) {
     #print('No length')
     current_backfill_dose <- NA
-    return(list('backfill_dose' = current_backfill_dose))
+    output_list <- list('backfill_dose' = current_backfill_dose) # Define output list outside return function
+    return(output_list)
   }
   
   #is this still okay? check the dose-individual posteriors for the current backfilldose and for the cohort 
@@ -181,7 +202,12 @@ maximum_open_EWOC <- function(cohort, time_pts_backfill, current_dose, doses_inf
    
    if(is.na(results$choice)){
      current_backfill_dose <- NA
-     return(list('backfill_dose' = current_backfill_dose, 'info_probs' = results$info_probs, 'diagnostics' = results$diagnostics, 'doses_info' = doses_info))
+     output_list <- list('backfill_dose' = current_backfill_dose,
+                         'info_probs' = results$info_probs,
+                         'diagnostics' = results$diagnostics,
+                         'doses_info' = doses_info)
+     # Define output list outside return function
+     return(output_list)
    } 
    
    #ensure that the backfill dose is always lower than the current cohort dose
@@ -197,11 +223,11 @@ maximum_open_EWOC <- function(cohort, time_pts_backfill, current_dose, doses_inf
      current_backfill_dose <- NA
    } else {current_backfill_dose <- results$choice}
    
-   
+     # Define output list outside return function
     return(list('backfill_dose' = current_backfill_dose, 'info_probs' = results$info_probs, 'diagnostics' = results$diagnostics, 'doses_info' = doses_info))
     
    }
-  
+  # Define output list outside return function
   return(list('backfill_dose' = current_backfill_dose))
         
 }
@@ -219,10 +245,16 @@ logposterior <- function(data, betas){
   p <- 1/(1 + exp(-logit_p))
 
   likelihood <- sum(dbinom(data$DLT, data$Pts, p, log = T))
+  #! This is not your likelihood, it is your loglikelihood, so always prefer
+  #! a naming convention that really tells what the object is (e.g. loglikelihood)
+  
   prior <- dmvnorm(betas, mean = prior_mean, sigma = prior_var, log = T)
+  #! Again, this is not your prior but your log-prior...Also, you only need
+  #! the kernel of the Gaussian and not necessarily its normalizing constant.
   
   #As the lik is written in terms of beta0 and beta1 I need the version in beta0 and log(beta1).
-  #the det(jacobian) is the exp(beta2) that multiplies the posterior so to obtain the posterior in beta0 and log(beta1). 
+  #the det(jacobian) is the exp(beta2) that multiplies the posterior so to
+  #obtain the posterior in beta0 and log(beta1). 
   #Since work in log then it is the beta2  
  
   return(sum(sum(likelihood, prior), betas[2]) )
@@ -329,7 +361,8 @@ MCMC_adaptive_EWOC <- function(cohort, doses_info, time_arrival, i_simulation = 
   
   for( i in 0:(iterations-2) ){
     
-    beta_proposal <- beta_proposal[(i-1+2), ] + rmvnorm(n = 1, mean = c(0, 0), sigma = exp(lambda_proposed)*sigma_current) #sampling of beta0 and log(beta1)
+    beta_proposal <- beta_proposal[(i-1+2), ] + rmvnorm(n = 1, mean = c(0, 0),
+                            sigma = exp(lambda_proposed)*sigma_current) #sampling of beta0 and log(beta1)
      
     log_now <- logposterior(data, beta_proposal)
     log_previous <- logposterior(data, beta_parms[(i - 1 + 2), ])
@@ -346,7 +379,7 @@ MCMC_adaptive_EWOC <- function(cohort, doses_info, time_arrival, i_simulation = 
       
     }
     
-    u <- runif(1, min = 0, max = 1)
+    u <- runif(1)
     if(log_ratio >= 0 || u <= exp(log_ratio)){
       beta_parms[(i + 2), ] <- beta_proposal
       n_accept <- n_accept + 1
