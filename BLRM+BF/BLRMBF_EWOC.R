@@ -8,6 +8,9 @@ library(rriskDistributions)
 library(nimble)
 
 #---------------------------------------------------------------------------------------------------
+
+set.seed(1234)
+
 # weibull_parms()
 
 weibull_parms <- function(pDLT, DLT_time){
@@ -20,12 +23,8 @@ weibull_parms <- function(pDLT, DLT_time){
 
 #cohort_patient()
 cohort_patient <- function(cohort, doses_info, current_dose, run, pts, 
-                           previous_time, last_arrival_time = 0, last_lag = 0,
-                           i_simulation = 0){
+                           previous_time, last_arrival_time = 0, last_lag = 0){
   
-  
-  seed <- 1234 + run + i_simulation
-  set.seed(seed)
   
   #take the parms for the weibull DLT according to the current_dose
   parms_DLT <- doses_info %>% filter(Dose == current_dose) %>% select(shape = Shape_DLT, scale = Scale_DLT)
@@ -62,13 +61,9 @@ cohort_patient <- function(cohort, doses_info, current_dose, run, pts,
 }
 
 #backfill_patients()
-backfill_patients <- function(cohort, run, pts, previous_time, limit_time, n_max, i_simulation = 0){
+backfill_patients <- function(cohort, run, pts, previous_time, limit_time, n_max){
     
-    seed <- 555 + run + i_simulation 
-    #! Why do you set a seed within a function? The seed should ideally be a single
-    #! number e.g. set.seed(1234) at the beginning of your code where you run your
-    #! simulations.
-    set.seed(seed)
+   
     #generate potentially untill full of pts 
     while(pts < n_max){
       lag_arrival <- round(rexp(1, rate = lambda), 4)
@@ -107,18 +102,16 @@ check_individual_posterior <- function(pts, fail, dose, info_probs){
 #open_close_EWOC
 
 open_close_EWOC <- function(cohort, doses_info, current_dose, 
-                            time_arrival = 1000, run, target = 0.3, 
-                            i_simulation = 0){
+                            time_arrival = 1000, run, target = 0.3){
   
   info_probs <- data.frame('Dose' = doses_info$Dose, 'alpha' = rep(NA, nrow(doses_info), 'beta' = rep(NA, nrow(doses_info))))
   
   prob <- data.frame(matrix(ncol = length(doses_info$Dose), nrow = 9000)) #nrow = iterations - burnin
   
   #directly call the MCMC
-  results <- MCMC_adaptive_EWOC(cohort, doses_info, time_arrival, 
-                                i_simulation = i_simulation, 
+  results <- MCMC_adaptive_EWOC(cohort, doses_info, time_arrival,  
                                 run = run) #iterations = 10000, burnin = 1000
-  #results_nimble <- MCMC_nimble(cohort, doses_info, time_arrival, i_simulation = i_simulation, run = run)
+  #results_nimble <- MCMC_nimble(cohort, doses_info, time_arrival, run = run)
   
   #compare with Nimble results 
   #plot(as.mcmc(results$betas[, 1]))
@@ -177,7 +170,7 @@ maximum_open_EWOC <- function(cohort, time_pts_backfill, current_dose,
   
   if(isFALSE(cohort_check) || isFALSE(backfill_check)){
     
-   results <- open_close_EWOC(cohort, doses_info, current_dose = current_dose, time_arrival = time_pts_backfill, run = run, i_simulation = 0)
+   results <- open_close_EWOC(cohort, doses_info, current_dose = current_dose, time_arrival = time_pts_backfill, run = run)
 
    #update the doses_info so at the next stage we have proper info
    
@@ -223,12 +216,17 @@ maximum_open_EWOC <- function(cohort, time_pts_backfill, current_dose,
      current_backfill_dose <- NA
    } else {current_backfill_dose <- results$choice}
    
-     # Define output list outside return function
-    return(list('backfill_dose' = current_backfill_dose, 'info_probs' = results$info_probs, 'diagnostics' = results$diagnostics, 'doses_info' = doses_info))
+    # Define output list outside return function
+    output_list <- list('backfill_dose' = current_backfill_dose,
+                        'info_probs' = results$info_probs, 
+                        'diagnostics' = results$diagnostics,
+                        'doses_info' = doses_info)
+    return(output_list)
     
    }
   # Define output list outside return function
-  return(list('backfill_dose' = current_backfill_dose))
+  output_list <- list('backfill_dose' = current_backfill_dose)
+  return(output_list)
         
 }
 
@@ -244,28 +242,26 @@ logposterior <- function(data, betas){
   logit_p <- betas[1] + exp(betas[2])*log(data$Dose/reference_dose)
   p <- 1/(1 + exp(-logit_p))
 
-  likelihood <- sum(dbinom(data$DLT, data$Pts, p, log = T))
-  #! This is not your likelihood, it is your loglikelihood, so always prefer
-  #! a naming convention that really tells what the object is (e.g. loglikelihood)
-  
-  prior <- dmvnorm(betas, mean = prior_mean, sigma = prior_var, log = T)
-  #! Again, this is not your prior but your log-prior...Also, you only need
-  #! the kernel of the Gaussian and not necessarily its normalizing constant.
-  
+  log_likelihood <- sum(dbinom(data$DLT, data$Pts, p, log = T))
+ 
+  #log_prior <- dmvnorm(betas, mean = prior_mean, sigma = prior_var, log = T)
+  #log_prior = log(kernel_Bivariate_normal with rho = 0)
+  log_prior <- log(exp(-1/(2)*( ((betas[1] - prior_mean[1])/sqrt(prior_var[1,1]))^2  + ((betas[2] - prior_mean[2])/sqrt(prior_var[2,2]))^2)))
+
   #As the lik is written in terms of beta0 and beta1 I need the version in beta0 and log(beta1).
   #the det(jacobian) is the exp(beta2) that multiplies the posterior so to
   #obtain the posterior in beta0 and log(beta1). 
   #Since work in log then it is the beta2  
- 
-  return(sum(sum(likelihood, prior), betas[2]) )
+  output_sum <- sum(sum(log_likelihood, log_prior), betas[2])
+  return(output_sum )
   
 }
 
 #MCMC --> more similar to Nimble but not good a.r. (tried on i_simualtion = 1, scenario 3 with rference dose 3.51). Plots are in the Plots.pdf in ths repo
-MCMC <- function(cohort, doses_info, time_arrival, i_simulation = 0, run, iterations = 10000, burnin = 1000){
+MCMC <- function(cohort, doses_info, time_arrival, run, iterations = 10000, burnin = 1000){
   
   #set the seed according to the run and to the simulation number. Ok global variables  
-  set.seed((1234 + run + i_simulation))
+  #set.seed((1234 + run + i_simulation))
   
   #define the sd factor for the acceptance rate
   sd <- 2.4
@@ -322,17 +318,18 @@ MCMC <- function(cohort, doses_info, time_arrival, i_simulation = 0, run, iterat
   #derive the distribution of beta1 (beta1 = exp(log(beta1)))
   beta_parms[, 2] <- exp(beta_parms[, 2])
   #need for the parms and for the diagnostics
-  return(list('betas' = beta_parms, 'diagnostics' = diagnostics))
+  output_list <- list('betas' = beta_parms, 'diagnostics' = diagnostics)
+  return(output_list)
   
 }
 
 #MCMC_adaptive_EWOC --> might be problems with this as the plots are fairly different wrt Nimble ones. But the major concern is that the plots for beta0 (betas[, 1] or beta_parms[, 1]) and for log(beta1) (betas[, 2] or beta_parms[, 2])
 #are always the same distribution just moved in the x-axis
 
-MCMC_adaptive_EWOC <- function(cohort, doses_info, time_arrival, i_simulation = 0, run, iterations = 10000, burnin = 1000, delta = 0.01){
+MCMC_adaptive_EWOC <- function(cohort, doses_info, time_arrival, run, iterations = 10000, burnin = 1000, delta = 0.01){
   
   #set the seed according to the run and to the simulation number. Ok global variables  
-  set.seed((1234 + run + i_simulation))
+  #set.seed((1234 + run + i_simulation))
   
 
   #take the values in a summary format
@@ -412,17 +409,18 @@ MCMC_adaptive_EWOC <- function(cohort, doses_info, time_arrival, i_simulation = 
   beta_parms[, 2] <- exp(beta_parms[, 2])
 
   #need for the parms and for the diagnostics
-  return(list('betas' = beta_parms, 'diagnostics' = diagnostics))
+  output_list <- list('betas' = beta_parms, 'diagnostics' = diagnostics)
+  return(output_list)
   
 }
 
 
 #try with another way of adaptive design, with adaptattion of one parm per time and not both togheter. Better plots, still not eqaul to Nibmle. 
 #A.R = 24 if alpha** = 0.24 and delta 0 0.01 but since it should be 1-dim then alpha** = 0.44. Then my overall A.R should be still 24 and i need delta = 1, right?
-MCMC_adaptive_EWOC3 <- function(cohort, doses_info, time_arrival, i_simulation = 0, run, iterations = 10000, burnin = 1000, delta = 0.01){
+MCMC_adaptive_EWOC3 <- function(cohort, doses_info, time_arrival, run, iterations = 10000, burnin = 1000, delta = 0.01){
   
   #set the seed according to the run and to the simulation number. Ok global variables  
-  set.seed((1234 + run + i_simulation))
+  #set.seed((1234 + run + i_simulation))
   
 
   #take the values in a summary format
@@ -506,17 +504,18 @@ MCMC_adaptive_EWOC3 <- function(cohort, doses_info, time_arrival, i_simulation =
   beta_parms[, 2] <- exp(beta_parms[, 2])
 
   #need for the parms and for the diagnostics
-  return(list('betas' = beta_parms, 'diagnostics' = diagnostics))
+  output_list <- list('betas' = beta_parms, 'diagnostics' = diagnostics)
+  return(output_list)
   
 }
 
 
 #MCMC_nimble
 #NOTE: reference_dose to a default of 2.51. MUST be changed at need. THis must be coherent with the reference_dose that we set outside. The reference dose id the ture MTD + 0.01
-MCMC_nimble <- function(cohort, doses_info, time_arrival, i_simulation = 0, run, iterations = 10000, burnin = 1000, delta = 0.01, reference_dose = 2.51){
+MCMC_nimble <- function(cohort, doses_info, time_arrival, run, iterations = 10000, burnin = 1000, delta = 0.01, reference_dose = 2.51){
   
   #set the seed according to the run and to the simulation number. Ok global variables  
-  set.seed((1234 + run + i_simulation))
+  #set.seed((1234 + run + i_simulation))
   
   data <- cohort %>% filter(Limit_time <= time_arrival) %>% filter(!is.na(Dose)) 
   
@@ -552,8 +551,8 @@ MCMC_nimble <- function(cohort, doses_info, time_arrival, i_simulation = 0, run,
                         nchains = 1, 
                         thin = 1, 
                         samplesAsCodaMCMC = T)
-  
-  return(list('betas' = model.sim, 'diagnostics' = c(NA, NA, NA)))
+  output_list <- list('betas' = model.sim, 'diagnostics' = c(NA, NA, NA))
+  return(output_list)
 }
 
 #evaluate_posterior()
@@ -624,19 +623,19 @@ compute_parameters <- function(info_probs, probs){
 }
 
 #decision_EWOC()
-decision_EWOC <- function(cohort, doses_info, time_arrival = 1000, run, target = 0.3, i_simulation = 0){
+decision_EWOC <- function(cohort, doses_info, time_arrival = 1000, run, target = 0.3){
   
   info_probs <- data.frame('Dose' = doses_info$Dose, 'alpha' = rep(NA, nrow(doses_info), 'beta' = rep(NA, nrow(doses_info))))
   prob <- data.frame(matrix(ncol = length(doses_info$Dose), nrow = 9000)) #nrow = iterations - burnin
   
   #directly call the MCMC
-  results <- MCMC_adaptive_EWOC(cohort, doses_info, time_arrival, i_simulation = i_simulation, run = run) #iterations = 10000, burnin = 1000
+  results <- MCMC_adaptive_EWOC(cohort, doses_info, time_arrival, run = run) #iterations = 10000, burnin = 1000
 
   #compare the results with Nimble 
   #plot(as.mcmc(results$betas[, 1]))
   #plot(as.mcmc(results$betas[, 2]))
   
-  results_nimble <- MCMC_nimble(cohort, doses_info, time_arrival, i_simulation = i_simulation, run = run)
+  results_nimble <- MCMC_nimble(cohort, doses_info, time_arrival, run = run)
   #plot(as.mcmc(results_nimble$betas))
   
   #compute the probabilities (exp the beta_1 as you have samples of log(beta_1) --> changed to have directly beta1 look at MCMC)
@@ -656,8 +655,9 @@ decision_EWOC <- function(cohort, doses_info, time_arrival = 1000, run, target =
   max_prob <- evaluate_posterior(prob)
   choice <- ifelse(is.na(max_prob), NA, doses_info$Dose[max_prob])
   print(c('choice', choice))
-  
-  return(list('choice' = choice, 'diagnostics' = results$diagnostics, 'info_probs' = info_probs))
+
+  output_list <- list('choice' = choice, 'diagnostics' = results$diagnostics, 'info_probs' = info_probs)
+  return(output_list)
   
 }
 
@@ -697,7 +697,7 @@ transform_data_doses <- function(doses_info){
 
 
 #compute_BLRMBF_EWOC()
-compute_BFBLRM_EWOC <- function(cohort, doses_info, cohortsize, n_max, n_cap, n_stop, DLT_time, lambda, target = 0.3 ,i_simulation = 0){
+compute_BFBLRM_EWOC <- function(cohort, doses_info, cohortsize, n_max, n_cap, n_stop, DLT_time, lambda, target = 0.3){
   
   run <- 0 
   pts <- 0
@@ -729,7 +729,7 @@ compute_BFBLRM_EWOC <- function(cohort, doses_info, cohortsize, n_max, n_cap, n_
       if(pts >= (n_max - cohortsize + 1)){break}
       
       #compute the decision and save the diagnostics 
-      results <- decision_EWOC(cohort, doses_info, target = target, run = run, i_simulation = i_simulation)
+      results <- decision_EWOC(cohort, doses_info, target = target, run = run)
       diagnostics <- rbind(diagnostics, results$diagnostics)
       info_probs <- results$info_probs
       #deciison + safety rules at section 3.3
@@ -875,7 +875,7 @@ compute_BFBLRM_EWOC <- function(cohort, doses_info, cohortsize, n_max, n_cap, n_
     if(pts >= (n_max - cohortsize + 1)){break}
     
     #after having assigned all the new pts we can take the decision for the next cohort --> based on all the data up to now (by the rrival of the new pts)
-    results <- decision_EWOC(cohort, doses_info, time_arrival = last_arrival, target = target,  run = run, i_simulation = i_simulation)
+    results <- decision_EWOC(cohort, doses_info, time_arrival = last_arrival, target = target,  run = run)
     diagnostics <- rbind(diagnostics, results$diagnostics)
     info_probs <- results$info_probs
     next_dose <- results$choice
@@ -938,13 +938,13 @@ compute_BFBLRM_EWOC <- function(cohort, doses_info, cohortsize, n_max, n_cap, n_
   current_dose <- next_dose
 
 }
-  
-  return(list('cohort' = cohort, 'diagnostics' = diagnostics, 'safety' = n_early_stop, 'sufficient' = n_stop_reached , 'doses_info' = doses_info))
+  output_list <- list('cohort' = cohort, 'diagnostics' = diagnostics, 'safety' = n_early_stop, 'sufficient' = n_stop_reached , 'doses_info' = doses_info)
+  return(output_list)
 }
 
 
 #BLRM()
-BFBLRM <- function(doses, true_pDLT, true_presp, cohortsize,  n_max, n_cap, n_stop, DLT_time, lambda, target = 0.3, i_simulation = 0){
+BFBLRM <- function(doses, true_pDLT, true_presp, cohortsize,  n_max, n_cap, n_stop, DLT_time, lambda, target = 0.3){
   
   #compute the parms for each of the true_pDLT
   doses_info <- data.frame('Dose' = doses, 'Prob_DLT' = true_pDLT, 'Shape_DLT' = rep(NA, length(doses)), 'Scale_DLT' = rep(NA, length(doses)), 'Prob_resp' = true_presp, 'Shape_resp' = rep(NA, length(doses)), 'Scale_resp' = rep(NA, length(doses)))
@@ -963,7 +963,7 @@ BFBLRM <- function(doses, true_pDLT, true_presp, cohortsize,  n_max, n_cap, n_st
   #add the status 
   doses_info$State <- rep(NA, length(doses)) #state of opening of the backfilling dose levels: NA at the beginning, 0 if closed, 1 if open, 2 if close since n_cap
   cohort <- data.frame('Run' = as.numeric(rep(NA, n_max)), 'Pts' = as.numeric(rep(NA, n_max)), 'Group' = rep(NA, n_max), 'Dose'= as.numeric(rep(NA, n_max)), 'Time_arrival' = as.numeric(rep(-1, n_max)), 'Time_DLT' = as.numeric(rep(-1, n_max)), 'DLT' = as.numeric(rep(-1, n_max)), 'Lag' = as.numeric(rep(-1, n_max)), 'Limit_time' = as.numeric(rep(-1, n_max)), 'Sum_times' = as.numeric(rep(-1, n_max)))
-  results <- compute_BFBLRM_EWOC(cohort, doses_info, cohortsize, n_max, n_cap, n_stop, DLT_time, lambda, target = target, i_simulation = i_simulation)
+  results <- compute_BFBLRM_EWOC(cohort, doses_info, cohortsize, n_max, n_cap, n_stop, DLT_time, lambda, target = target)
   return(results)
 }
 
@@ -1013,4 +1013,4 @@ reference_dose <- 7.1
 true_pDLT <- c(0.02, 0.05, 0.10, 0.15, 0.20, 0.3)
 true_presp <- c(0.3, 0.35, 0.35, 0.4, 0.41, 0.44)
 
-response_10 <- BFBLRM(doses, true_pDLT, true_presp, cohortsize,  n_max, n_cap, n_stop, DLT_time, lambda, i_simulation = 4)
+response_10 <- BFBLRM(doses, true_pDLT, true_presp, cohortsize,  n_max, n_cap, n_stop, DLT_time, lambda)
