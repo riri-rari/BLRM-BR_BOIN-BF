@@ -266,7 +266,8 @@ The function BFBRLM() takes in input the doses, the true probabilities of DLT an
 
 ### General 
 
-- If BY the arrival of a patient no dose is open for backfill and no dose is openable for backfill then the patient is rejected 
+- If BY the arrival of a patient no dose is open for backfill and no dose is openable for backfill then the patient is rejected
+- If there is no a cohortsize number of spots available for the next cohort, the algorithm returns
 - The DLT_time is used as the time for assignment (reference to BLRM and TITE-BLRM)
 
 ### not EWOC 
