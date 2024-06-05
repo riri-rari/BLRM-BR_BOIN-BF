@@ -231,14 +231,5 @@ If the current dose is the maximum one: no need to check for backfilling
 - The DLT_time is used as the time for assignment (reference to BLRM and TITE-BLRM)
 - Titration might lead to a lot of underdosing ppl for the dose escalation --> I think it is the same in the paper (+ they consider all the ppl for underdosing of overdosing)
 
-#### 6.bis: Scenari
-
-- multiple doses as those from the BOIN paper
-- change of the target? reasonable? 
-- change of accrual rate? Change of DLT window? 
-- change of the safety boundary (for the elimination)?
-
-
-
 
 
