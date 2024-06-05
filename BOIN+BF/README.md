@@ -225,11 +225,10 @@ If the current dose is the maximum one: no need to check for backfilling
 #### 6: Limitations 
 
 - If BY the arrival of a patient no dose is open for backfill and no dose is openable for backfill then the patient is rejected 
-- In case of conflict and the backfill dose is the minimum dose and there is no safe dose between backfill and cohort, then the backfill is assigned as safe dose 
+- In case of conflict and the backfill dose is the minimum dose and there is no safe dose between backfill and cohort, then the backfill is not assigned
 - If there is no a cohortsize number of spots available for the next cohort, the algorithm returns
-- Once i have the dose escalation then i need to open the backfill wt dose-1 without caring for safety (makes sense as escalation done + No problem with re-opening since for a re-opening you have for sure patients  ). But then i do not care of how the actual dose is in terms of safety: should i check if the dose is still good? even if i do not have an info from same dose or upper dose? Bcs i do have patients --> you have checked with the the open_close and in case of no pts available then you do not alter the current level (equal to say that you do not have data to update/alter the info)
+- Once i have the dose escalation then i need to open the backfill wt dose-1 without caring for safety 
 - The DLT_time is used as the time for assignment (reference to BLRM and TITE-BLRM)
-- Titration might lead to a lot of underdosing ppl for the dose escalation --> I think it is the same in the paper (+ they consider all the ppl for underdosing of overdosing)
-
+- Titration might lead to a lot of underdosing ppl for the dose escalation 
 
 
