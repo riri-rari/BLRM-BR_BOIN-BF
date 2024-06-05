@@ -90,7 +90,7 @@ Assumptions used in the formula:
 - independent obsrvations (ok different patients) within same experiemtn (same conditions) --> so i can write Lik_2 * Lik_1 * prior to have the Posterior_2
 - exchangeability (no matter the order given the parameters beta) --> so i can use all info at once
 
-### MCMC()
+### MCMC() (not used in the final implementation)
 
 The MCMC() function is aimed to compute the MCMC posterior densities estimates for the $\beta_0$ and $\log(\beta_1)$ parameters. It does so applying the Metropolis-Hastings algorithm. 
 
@@ -99,7 +99,7 @@ The function accepts the proposal folowing the rules of the MH algorithm. After 
 
 The function takes in input the cohort dataset (cohort), the dataset witht he doses information (doses_info), the time by which the next patient is arrived (time_arrival), the simulation and the run values (i_simualtion and run) and the iterations (set to 10000) as well as the burn-in values (set to 1000). The function returns the posterior means of the $\beta$ parms and the diagnostic list. 
 
-### MCMC_adaptive_EWOC()
+### MCMC_adaptive_EWOC() (not used in the final implementation)
 
 The MCMC_adaptvie_EWOC() function is aimed to compute the MCMC posterior densities estimates for the $\beta_0$ and $\log(\beta_1)$ parameters. It does so applying an adaptive Metropolis-Hastings algorithm. 
 
@@ -236,9 +236,12 @@ The function BFBRLM() takes in input the doses, the true probabilities of DLT an
 ## Appendix
 
 ### 1 BLRM + BF RULES (to be finisehd, chosen rules of BF+BLRM paper)
-- Hard Safety
-- K-fold skipping 
+- Hard Safety (not in EWOC version)
+- K-fold skipping (not in EWOC version)
 - Sufficient information
+- Maximum patients
+- n\_cap, n\_stop
+- EWOC at 25\% (in EWOC version only)
  
 ### 2: Time values 
 
@@ -258,15 +261,21 @@ The function BFBRLM() takes in input the doses, the true probabilities of DLT an
 - 2: closed for n\_cap
 - -1: closed for not activity
 
+
 ## Limitations
+
+### General 
+
+- If BY the arrival of a patient no dose is open for backfill and no dose is openable for backfill then the patient is rejected 
+- The DLT_time is used as the time for assignment (reference to BLRM and TITE-BLRM)
+
+### not EWOC 
 
 -  In the decision() function we report the selected probability as the one that minimizes the absolute distance with the target. In the case for which two are minimizing then the lowest one is taken. Can be a conservative approach
 -  In the lowest-Dose-deemed-unsafe part I use the same limit as in the BOIN (0.95) whereas in the BLRM paper this limit is set to 0.80 (more conservative).
 -  Backfill closed with the overtoxicity boundary (different from BOIN)
--  The starting values in the MCMC are arbitrarly chosen as for the few observations a var-cov matrix estimated in any way would be extremelly large and so then the loop for the NA of the log_ratio would be never exit
+-  The starting values in the MCMC are arbitrarly chosen as for the few observations a var-cov matrix estimated in any way would be extremelly large making no sense 
 
-# What to do 9/4/24: 
-- finish commenting
-- discuss problems
-- check code Neuen
-- finish with implementation of the simulation settigns 
+### EWOC: 
+
+- use of Component-wise adaptive MCMC that might be not the optimal solution as it might be conservative in patients allocation 
