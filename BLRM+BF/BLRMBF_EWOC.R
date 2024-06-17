@@ -1014,3 +1014,105 @@ true_pDLT <- c(0.02, 0.05, 0.10, 0.15, 0.20, 0.3)
 true_presp <- c(0.3, 0.35, 0.35, 0.4, 0.41, 0.44)
 
 response_10 <- BFBLRM(doses, true_pDLT, true_presp, cohortsize,  n_max, n_cap, n_stop, DLT_time, lambda)
+
+
+# simualtions -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+#simulate stop_simualtion - start_simualtion + 1 trials 
+simulate_BFBRLM_v2_p1 <- function(start_simulation, stop_simulation, real_mtd, path_cohort, path_diagnostics, path_simulation){
+  
+  n_simulation <- stop_simulation - start_simulation + 1 #if 100 simulations then you'd say from 1 to 100 so 99 + 1
+  
+  results_simulation <- data.frame('N_under_dosing' = as.numeric(rep(NA, n_simulation)), 'N_MTD' = as.numeric(rep(NA, n_simulation)), 'N_over_dosing' = as.numeric(rep(NA, n_simulation)),'Pts' = as.numeric(rep(NA, n_simulation)) , 'Length' = as.numeric(rep(NA, n_simulation)), 'Safety_stop' = as.numeric(rep(NA, n_simulation)), 'Sufficient_info' = as.numeric(rep(NA, n_simulation)), 'MTD' = as.numeric(rep(NA, n_simulation)))
+  
+  diagnostics <- matrix(ncol = 3)
+  
+  total_results <- data.frame(matrix(ncol = 10))
+  colnames(total_results) <- c('Run', 'Pts', 'Group', 'Dose', 'Time_arrival', 'Time_DLT', 'DLT', 'Lag', 'Limit_time', 'Sum_times')
+  
+  
+  for (i_simulation in start_simulation:stop_simulation){
+    
+    print(c('SIMULATION', i_simulation))
+    #call the function 
+    results <- BFBLRM(doses, true_pDLT, true_presp, cohortsize,  n_max, n_cap, n_stop, DLT_time, lambda, i_simulation = i_simulation)
+    #check if the i_simulation can be taken inside the other functions (global)
+    #print(names(results))
+    
+    total_results <- rbind(total_results, results$cohort)
+
+    #find the MTD --> to check how often the true MTD is found 
+    mtd_estimated <- decision_EWOC(results$cohort, results$doses_info, time_arrival = 1000, run = 0, i_simulation = 0) #fixed 
+    mtd_estimated <- ifelse(is.na(mtd_estimated$choice), 0, mtd_estimated$choice)
+    #print(c('mtd',mtd_estimated))
+    
+    #obtain the needed values 
+    #print('new_results')
+    new_results <- subset(results$cohort, !is.na(Dose))
+    pud <- new_results %>% filter(Dose < real_mtd)  %>% summarise(pts = n())
+    pmtd <- new_results %>% filter(Dose == real_mtd) %>% summarise(pts = n())
+    pod <- new_results %>% filter(Dose > real_mtd) %>% summarise(pts = n()) 
+    #pts <- new_results %>% filter(Group == 'C') %>% summarise(pts = n())
+    pts_total <- nrow(new_results)
+    #print(c(pud, pmtd, pod, pts_total))
+    
+    length <- new_results %>% tail(1) %>% select(time = Time_arrival)
+    
+    Safety_stop <- results$safety
+    Sufficient_info <- results$sufficient
+    
+    
+    #organise the results 
+    #print(c('results',pud$pts, pmtd$pts, pod$pts, pts_total, length$time, Safety_stop, Sufficient_info, mtd_estimated))
+    results_simulation <- rbind(results_simulation, c(pud$pts, pmtd$pts, pod$pts, pts_total, length$time, Safety_stop, Sufficient_info, mtd_estimated))
+    
+    diagnostics <- rbind(diagnostics, results$diagnostics)
+    
+  }
+
+  write.csv(total_results, path_cohort)
+  write.csv(diagnostics, path_diagnostics)
+  write.csv(results_simulation, path_simulation)
+} 
+
+#edit the data 
+
+edit_data <- function(path){
+  
+  t <- read.csv(path)
+  t_1 <- t[201:400, ]
+  return(t_1)
+  
+}
+
+
+#compute the statistics of interest 
+
+simulate_BFBRLM_v2_p2 <- function(results_simulation, real_mtd){
+  
+  n_simulation <- 1000
+  #compute the summary stats --> ok in this way? check 
+  print(results_simulation)
+  
+  #mean percentage of pts at each level --> compute ONLY on cohort people 
+  perc_pud <- results_simulation$N_under_dosing/results_simulation$Pts * 100
+  perc_pmtd <- results_simulation$N_MTD/results_simulation$Pts * 100
+  perc_pod <- results_simulation$N_over_dosing/results_simulation$Pts * 100
+  
+  #percentages of times MTD was found 
+  mtd_perc <- sum(results_simulation$MTD == real_mtd)/n_simulation * 100
+  
+
+  return(list('Mean_perc_pud' = mean(perc_pud), 'Mean_pud' = mean(results_simulation$N_under_dosing),'Mean_perc_pmtd' = mean(perc_pmtd), 'Mean_pmtd' = mean(results_simulation$N_MTD), 'Mean_perc_pod' = mean(perc_pod), 'Mean_pod' = mean(results_simulation$N_over_dosing), 'Mean_pts' = mean(results_simulation$Pts), 'Mean_lenght' = mean(results_simulation$Length), 'Perc_SS' = mean(results_simulation$Safety_stop)*100, 'Perc_SI' = mean(results_simulation$Sufficient_info)*100, 'Perc_mtd' = mtd_perc))
+  
+}
+
+#Example 
+
+simulate_BFBRLM_v2_p1(1, 2, 1.5, path_cohort = '/home/riri_rari/Documents/Documents_b/UHasselt/Thesis/Results/cohort_BFBLRM_1', path_diagnostics = '/home/riri_rari/Documents/Documents_b/UHasselt/Thesis/Results/diagnostics_BFBLRM_1', path_simulation = '/home/riri_rari/Documents/Documents_b/UHasselt/Thesis/Results/simulation_BFBRLM_1')
+simulate_BFBRLM_v2_p1(3, 4, 1.5, path_cohort = '/home/riri_rari/Documents/Documents_b/UHasselt/Thesis/Results/cohort_BFBLRM_2', path_diagnostics = '/home/riri_rari/Documents/Documents_b/UHasselt/Thesis/Results/diagnostics_BFBLRM_2', path_simulation = '/home/riri_rari/Documents/Documents_b/UHasselt/Thesis/Results/simulation_BFBRLM_2')
+
+#compute the summary 
+t <- read.csv('/home/riri_rari/Documents/Documents_b/UHasselt/Thesis/Results/simulation_BFBRLM_1')
+t_2 <- read.csv('/home/riri_rari/Documents/Documents_b/UHasselt/Thesis/Results/simulation_BFBRLM_2') #here two rows are NA bcs of how it has been run. It is fine but the code has been changed
+merged <- rbind(t, t_2)
+simulate_BFBRLM_v2_p2(merged, 1.5)
